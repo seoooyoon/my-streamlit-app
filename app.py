@@ -2,180 +2,99 @@ import streamlit as st
 import requests
 from collections import Counter
 
-# --------------------
 # 페이지 설정
-# --------------------
-st.set_page_config(
-    page_title="🎬 나와 어울리는 영화는?",
-    page_icon="🎬",
-    layout="wide"
-)
+st.set_page_config(page_title="🎬 나와 어울리는 영화는?", layout="wide")
 
-# --------------------
-# 사이드바 - TMDB API Key 입력
-# --------------------
+# 사이드바 - API Key 입력
 st.sidebar.title("🔑 TMDB 설정")
-tmdb_api_key = st.sidebar.text_input(
-    "TMDB API Key를 입력하세요",
-    type="password"
-)
+tmdb_api_key = st.sidebar.text_input("TMDB API Key를 입력하세요", type="password")
 
-# --------------------
-# 제목 & 소개
-# --------------------
 st.title("🎬 나와 어울리는 영화는?")
-st.write("간단한 심리테스트를 통해 당신에게 어울리는 영화 장르와 작품을 추천해드려요 🍿")
+st.write("당신의 영화 취향에 어울리는 작품을 추천합니다 🎥✨")
+st.markdown("---")
 
-st.divider()
-
-# --------------------
-# 질문 데이터
-# --------------------
+# 질문
 questions = [
     {
-        "question": "Q1. 시험 끝난 날, 갑자기 하루가 통째로 비었다! 가장 끌리는 계획은?",
-        "options": [
-            "조용한 카페에서 음악 들으며 하루 정리하기 ☕",
-            "친구들이랑 즉흥 여행 떠나기 🚗",
-            "집에서 세계관 몰입되는 콘텐츠 정주행 🪐",
-            "아무 생각 없이 웃긴 영상만 계속 보기 😂"
-        ]
+        "question": "Q1. 시험 끝난 날, 가장 끌리는 계획?",
+        "options": ["카페에서 하루 정리 ☕", "친구들과 여행 🚗", "집에서 콘텐츠 몰입 🪐", "웃긴 영상 보기 😂"]
     },
     {
-        "question": "Q2. 새벽 2시, 괜히 감성 폭발할 때 드는 생각은?",
-        "options": [
-            "사람 관계는 왜 이렇게 복잡할까…",
-            "지금 당장 어디론가 떠나고 싶다",
-            "만약 다른 차원의 내가 있다면?",
-            "이 시간에 나만 이러는 거 아님?"
-        ]
+        "question": "Q2. 새벽 감성, 드는 생각?",
+        "options": ["관계는 왜 복잡해?", "지금 떠나고 싶다", "다른 차원의 내가 있다면?", "나만 이 시간에..."]
     },
     {
-        "question": "Q3. 친구가 같이 영화 보자고 한다. 네가 고르는 장르는?",
-        "options": [
-            "여운 남는 스토리 중심 영화 🎞",
-            "스케일 큰 장면 많은 영화 💥",
-            "상상력 터지는 세계관 영화 ✨",
-            "배꼽 잡고 웃을 수 있는 영화 🤣"
-        ]
+        "question": "Q3. 같이 볼 영화 장르?",
+        "options": ["스토리 중심 🎞", "스케일 큰 장면 💥", "세계관 영화 ✨", "배꼽 잡는 코미디 🤣"]
     },
     {
-        "question": "Q4. 과제가 너무 많아 스트레스 받을 때, 너의 회복 방식은?",
-        "options": [
-            "혼자 조용히 생각 정리하며 감정 소화하기",
-            "운동하거나 밖에서 활동하며 스트레스 날리기",
-            "현실 잊고 다른 세계로 도피하기",
-            "친구들이랑 수다 떨며 웃어버리기"
-        ]
+        "question": "Q4. 과제 스트레스 회복 방식?",
+        "options": ["혼자 생각", "운동", "다른 세계 도피", "친구 수다"]
     },
     {
-        "question": "Q5. 네 인생을 영화 한 편으로 만든다면?",
-        "options": [
-            "감정선이 중요한 성장 이야기 🌱",
-            "위기를 극복하는 도전의 연속 🔥",
-            "평범해 보이지만 비밀이 숨겨진 세계 🌌",
-            "사건은 많은데 계속 웃픈 전개 🤪"
-        ]
+        "question": "Q5. 인생 영화 장르?",
+        "options": ["감정 성장 🌱", "도전 연속 🔥", "비밀 세계 🌌", "웃픈 전개 🤪"]
     }
 ]
 
-# --------------------
-# 장르 매핑
-# --------------------
-genre_map = {
-    "로맨스/드라마": {
-        "ids": [18, 10749],
-        "reason": "감정과 관계, 스토리에 깊이 공감하는 타입이에요."
-    },
-    "액션/어드벤처": {
-        "ids": [28],
-        "reason": "도전과 스릴, 역동적인 전개를 즐기는 타입이에요."
-    },
-    "SF/판타지": {
-        "ids": [878, 14],
-        "reason": "상상력 넘치는 세계관과 새로운 가능성에 끌리는 타입이에요."
-    },
-    "코미디": {
-        "ids": [35],
-        "reason": "웃음과 가벼운 분위기로 에너지를 얻는 타입이에요."
-    }
-}
-
-genre_keys = list(genre_map.keys())
-
-# --------------------
-# 질문 표시
-# --------------------
 answers = []
-
-for idx, q in enumerate(questions):
-    choice = st.radio(
-        q["question"],
-        q["options"],
-        key=f"q{idx}"
-    )
-    answers.append(q["options"].index(choice))
+for i, q in enumerate(questions):
+    answers.append(st.radio(q["question"], q["options"], key=f"q{i}"))
     st.write("")
 
-st.divider()
+st.markdown("---")
 
-# --------------------
-# 결과 버튼
-# --------------------
+genre_map = {
+    0: ("로맨스/드라마", [18, 10749]),
+    1: ("액션/어드벤처", [28]),
+    2: ("SF/판타지", [878, 14]),
+    3: ("코미디", [35])
+}
+
+def fetch_tmdb_recommendations(genre_ids, api_key):
+    """
+    TMDB discover API로 인기 + 평점 높은 영화 5개를 가져옵니다.
+    """
+    url = "https://api.themoviedb.org/3/discover/movie"
+    params = {
+        "api_key": api_key,
+        "with_genres": ",".join(map(str, genre_ids)),
+        "language": "ko-KR",
+        "sort_by": "vote_average.desc",  # 평점 높은 순
+        "vote_count.gte": 50            # 투표수가 50 이상
+    }
+    response = requests.get(url, params=params)
+    return response.json().get("results", [])
+
 if st.button("🎯 결과 보기"):
     if not tmdb_api_key:
-        st.error("TMDB API Key를 사이드바에 입력해주세요!")
+        st.error("TMDB API Key를 입력해주세요!")
     else:
-        st.subheader("🔍 분석 중...")
-        st.write("당신의 선택을 바탕으로 영화를 추천하고 있어요 🎬")
+        # 장르 분석
+        counts = Counter([q.index(a) for q, a in zip([[o for o in q["options"]] for q in questions], answers)])
+        top_idx = counts.most_common(1)[0][0]
+        genre_name, genre_id_list = genre_map[top_idx]
 
-        # --------------------
-        # 1️⃣ 장르 분석
-        # --------------------
-        counter = Counter(answers)
-        top_choice = counter.most_common(1)[0][0]
-        selected_genre = genre_keys[top_choice]
+        st.success(f"✨ 추천 장르: **{genre_name}**")
 
-        st.success(f"✨ 당신에게 어울리는 장르: **{selected_genre}**")
-        st.write(genre_map[selected_genre]["reason"])
+        # TMDB 추천
+        movies = fetch_tmdb_recommendations(genre_id_list, tmdb_api_key)
 
-        # --------------------
-        # 2️⃣ TMDB API 호출
-        # --------------------
-        genre_ids = ",".join(map(str, genre_map[selected_genre]["ids"]))
-
-        url = (
-            "https://api.themoviedb.org/3/discover/movie"
-            f"?api_key={tmdb_api_key}"
-            f"&with_genres={genre_ids}"
-            "&language=ko-KR"
-            "&sort_by=popularity.desc"
-        )
-
-        response = requests.get(url)
-        data = response.json()
-
-        st.divider()
         st.subheader("🎬 추천 영화 TOP 5")
-
-        # --------------------
-        # 3️⃣ 영화 표시
-        # --------------------
-        for movie in data.get("results", [])[:5]:
-            col1, col2 = st.columns([1, 3])
-
-            with col1:
+        for movie in movies[:5]:
+            cols = st.columns([1, 3])
+            with cols[0]:
                 if movie.get("poster_path"):
-                    poster_url = "https://image.tmdb.org/t/p/w500" + movie["poster_path"]
-                    st.image(poster_url, use_container_width=True)
+                    st.image(f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
                 else:
                     st.write("포스터 없음")
 
-            with col2:
+            with cols[1]:
                 st.markdown(f"### {movie['title']}")
-                st.write(f"⭐ 평점: {movie['vote_average']}")
-                st.write(movie.get("overview", "줄거리 정보가 없습니다."))
-                st.caption("💡 이 영화를 추천하는 이유: 당신의 선택이 이 영화의 분위기와 잘 어울려요.")
+                st.write(f"⭐ 평점: {movie['vote_average']} (투표: {movie['vote_count']})")
+                st.write(f"📅 개봉일: {movie.get('release_date', '정보 없음')}")
+                st.write(movie.get("overview", "줄거리 없음"))
+                st.caption(f"💡 이 영화를 추천하는 이유: {genre_name} 감성과 잘 맞습니다!")
+            st.markdown("---")
 
-            st.divider()
 
