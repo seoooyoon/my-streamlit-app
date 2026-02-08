@@ -1,100 +1,112 @@
 import streamlit as st
-import requests
-from collections import Counter
+import openai
+import os
 
-# 페이지 설정
-st.set_page_config(page_title="🎬 나와 어울리는 영화는?", layout="wide")
+# OpenAI 설정
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
-# 사이드바 - API Key 입력
-st.sidebar.title("🔑 TMDB 설정")
-tmdb_api_key = st.sidebar.text_input("TMDB API Key를 입력하세요", type="password")
+# -------------------------------
+# AI 응답 함수
+# -------------------------------
+def generate_majorpass_response(user_info):
+    prompt = f"""
+당신은 대학생 진로 상담 전문 AI이자,
+'전공을 커리어 자산으로 변환하는 코치'입니다.
 
-st.title("🎬 나와 어울리는 영화는?")
-st.write("당신의 영화 취향에 어울리는 작품을 추천합니다 🎥✨")
-st.markdown("---")
+[사용자 정보]
+- 전공: {user_info['major']}
+- 학년: {user_info['year']}
+- 희망 진로: {user_info['career']}
+- 고민 유형: {user_info['concern']}
+- 불안 요소: {user_info['anxiety']}
 
-# 질문
-questions = [
-    {
-        "question": "Q1. 시험 끝난 날, 가장 끌리는 계획?",
-        "options": ["카페에서 하루 정리 ☕", "친구들과 여행 🚗", "집에서 콘텐츠 몰입 🪐", "웃긴 영상 보기 😂"]
-    },
-    {
-        "question": "Q2. 새벽 감성, 드는 생각?",
-        "options": ["관계는 왜 복잡해?", "지금 떠나고 싶다", "다른 차원의 내가 있다면?", "나만 이 시간에..."]
-    },
-    {
-        "question": "Q3. 같이 볼 영화 장르?",
-        "options": ["스토리 중심 🎞", "스케일 큰 장면 💥", "세계관 영화 ✨", "배꼽 잡는 코미디 🤣"]
-    },
-    {
-        "question": "Q4. 과제 스트레스 회복 방식?",
-        "options": ["혼자 생각", "운동", "다른 세계 도피", "친구 수다"]
-    },
-    {
-        "question": "Q5. 인생 영화 장르?",
-        "options": ["감정 성장 🌱", "도전 연속 🔥", "비밀 세계 🌌", "웃픈 전개 🤪"]
-    }
-]
+아래 순서로 답변해주세요.
 
-answers = []
-for i, q in enumerate(questions):
-    answers.append(st.radio(q["question"], q["options"], key=f"q{i}"))
-    st.write("")
+1. 사용자의 상황 요약 (공감 중심)
+2. 현재 전공을 희망 진로에 맞게 재해석한 강점
+3. 전과 / 복수전공 / 전공 유지+커리어 전환 비교
+4. 전공을 ‘커리어 자산’으로 쓰는 전략
+5. 지금 당장 할 수 있는 To-do 로드맵 (단계별)
 
-st.markdown("---")
+결정을 강요하지 말고, 판단 기준을 제시해주세요.
+"""
 
-genre_map = {
-    0: ("로맨스/드라마", [18, 10749]),
-    1: ("액션/어드벤처", [28]),
-    2: ("SF/판타지", [878, 14]),
-    3: ("코미디", [35])
-}
+    response = openai.ChatCompletion.create(
+        model="gpt-4o-mini",
+        messages=[
+            {"role": "system", "content": "너는 따뜻하지만 현실적인 진로 코치다."},
+            {"role": "user", "content": prompt}
+        ],
+        temperature=0.7
+    )
 
-def fetch_tmdb_recommendations(genre_ids, api_key):
-    """
-    TMDB discover API로 인기 + 평점 높은 영화 5개를 가져옵니다.
-    """
-    url = "https://api.themoviedb.org/3/discover/movie"
-    params = {
-        "api_key": api_key,
-        "with_genres": ",".join(map(str, genre_ids)),
-        "language": "ko-KR",
-        "sort_by": "vote_average.desc",  # 평점 높은 순
-        "vote_count.gte": 50            # 투표수가 50 이상
-    }
-    response = requests.get(url, params=params)
-    return response.json().get("results", [])
+    return response.choices[0].message.content
 
-if st.button("🎯 결과 보기"):
-    if not tmdb_api_key:
-        st.error("TMDB API Key를 입력해주세요!")
+
+# -------------------------------
+# Streamlit UI
+# -------------------------------
+st.set_page_config(page_title="MajorPass", page_icon="🎓", layout="centered")
+
+st.title("🎓 MajorPass")
+st.subheader("Path to Pass — 전공을 커리어 자산으로")
+
+st.markdown("""
+**MajorPass는 제가 실제로 겪은 고민에서 출발한 앱입니다.**
+
+- 실내건축학과 재학  
+- 광고 분야 진로 희망  
+- 전과를 해야 할지, 전공을 버려야 할지 고민  
+- 그리고 깨달았습니다.  
+👉 *전공은 바꾸지 않아도, 다르게 쓸 수 있다는 것.*
+
+MajorPass는  
+**전공을 ‘문제’가 아니라 ‘자산’으로 바꾸는 AI 진로 상담 앱**입니다.
+""")
+
+st.divider()
+
+# -------------------------------
+# 사용자 입력
+# -------------------------------
+st.header("📝 나의 상황 입력")
+
+major = st.text_input("현재 전공", placeholder="예: 실내건축학과")
+year = st.selectbox("학년", ["1학년", "2학년", "3학년", "4학년"])
+career = st.text_input("희망 진로 / 관심 분야", placeholder="예: 광고, 공간 브랜딩, UX")
+concern = st.selectbox(
+    "현재 가장 큰 고민",
+    ["전과", "복수전공", "전공 유지", "진로 불안"]
+)
+anxiety = st.text_area(
+    "불안하거나 걱정되는 점",
+    placeholder="예: 취업 가능성, 포트폴리오, 늦어질 졸업"
+)
+
+# -------------------------------
+# 실행 버튼
+# -------------------------------
+if st.button("🔍 MajorPass 분석 시작"):
+    if not major or not career:
+        st.warning("전공과 희망 진로는 꼭 입력해주세요.")
     else:
-        # 장르 분석
-        counts = Counter([q.index(a) for q, a in zip([[o for o in q["options"]] for q in questions], answers)])
-        top_idx = counts.most_common(1)[0][0]
-        genre_name, genre_id_list = genre_map[top_idx]
+        user_info = {
+            "major": major,
+            "year": year,
+            "career": career,
+            "concern": concern,
+            "anxiety": anxiety
+        }
 
-        st.success(f"✨ 추천 장르: **{genre_name}**")
+        with st.spinner("AI가 전공을 커리어 자산으로 변환 중입니다..."):
+            result = generate_majorpass_response(user_info)
 
-        # TMDB 추천
-        movies = fetch_tmdb_recommendations(genre_id_list, tmdb_api_key)
+        st.divider()
+        st.header("📊 MajorPass 결과 리포트")
+        st.markdown(result)
 
-        st.subheader("🎬 추천 영화 TOP 5")
-        for movie in movies[:5]:
-            cols = st.columns([1, 3])
-            with cols[0]:
-                if movie.get("poster_path"):
-                    st.image(f"https://image.tmdb.org/t/p/w500{movie['poster_path']}")
-                else:
-                    st.write("포스터 없음")
+        st.success("✔️ 결정은 당신의 몫입니다. MajorPass는 기준을 제공합니다.")
 
-            with cols[1]:
-                st.markdown(f"### {movie['title']}")
-                st.write(f"⭐ 평점: {movie['vote_average']} (투표: {movie['vote_count']})")
-                st.write(f"📅 개봉일: {movie.get('release_date', '정보 없음')}")
-                st.write(movie.get("overview", "줄거리 없음"))
-                st.caption(f"💡 이 영화를 추천하는 이유: {genre_name} 감성과 잘 맞습니다!")
-            st.markdown("---")
+
 
 
