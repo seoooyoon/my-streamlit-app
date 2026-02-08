@@ -40,7 +40,6 @@ html, body, [data-testid="stApp"] {
     padding-top: 2rem;
 }
 
-/* Splash Animation */
 @keyframes fadeOut {
     0% { opacity: 1; }
     70% { opacity: 1; }
@@ -77,7 +76,7 @@ html, body, [data-testid="stApp"] {
 """, unsafe_allow_html=True)
 
 # -----------------------------
-# SPLASH SCREEN
+# SPLASH
 # -----------------------------
 st.markdown("""
 <div class="splash">
@@ -98,7 +97,7 @@ col1, col2 = st.columns(2)
 
 with col1:
     major = st.text_input(
-        "현재 전공 (풀네임)",
+        "현재 전공 (풀네임 입력)",
         placeholder="예: 실내건축학과"
     )
     semester = st.selectbox(
@@ -127,56 +126,47 @@ st.markdown("<br/>", unsafe_allow_html=True)
 analyze = st.button("🔍 분석 결과 확인하기", use_container_width=True)
 
 # -----------------------------
-# ANALYSIS LOGIC (디테일 강화)
+# LOGIC
 # -----------------------------
-def diagnose_status(gpa, major_credit, plan):
-    # 성적 분석
+def diagnose_status(gpa, plan):
+    # ⭐ 수정됨: 메시지 구체화
     if gpa >= 3.8:
-        grade_msg = """
-        현재 성적은 상위권에 해당하며,  
-        **선택의 폭이 넓은 상태**입니다.  
-        학점 관리보다 ‘어디에 집중할 것인가’가 더 중요해지는 시점입니다.
-        """
+        grade_msg = (
+            "현재 GPA는 상위권에 해당합니다.<br/>"
+            "성적 자체가 하나의 경쟁력이 될 수 있는 구간으로, "
+            "전공 심화·연구·대외활동 확장이 매우 유리합니다."
+        )
     elif gpa >= 3.3:
-        grade_msg = """
-        성적은 안정적인 편이지만,  
-        **전공 내 포지셔닝 전략이 필요한 구간**입니다.  
-        전공 수업 중 강점 과목을 명확히 구분하는 것이 중요합니다.
-        """
+        grade_msg = (
+            "성적은 안정적인 편이지만, 앞으로의 선택에 따라 가치가 달라질 수 있습니다.<br/>"
+            "성적 관리와 함께 ‘무엇을 남길 것인가’를 병행 설계하는 시점입니다."
+        )
     else:
-        grade_msg = """
-        성적 관리가 향후 선택에 직접적인 영향을 줄 수 있습니다.  
-        다음 학기에는 **선택과 집중 전략**이 반드시 필요합니다.
-        """
+        grade_msg = (
+            "현재 성적은 전략적 관리가 필요한 구간입니다.<br/>"
+            "모든 과목을 끌어올리기보다는, 핵심 과목과 결과물 중심으로 집중하는 것이 효과적입니다."
+        )
 
-    # 전공 계획 분석
     if plan == "본전공 유지":
-        plan_msg = """
-        현재 전공을 중심으로  
-        **전문성을 깊게 쌓는 전략**이 적합합니다.  
-        전공 수업 + 결과물 + 경험이 하나의 스토리로 연결되어야 합니다.
-        """
+        plan_msg = (
+            "본전공을 유지하는 선택은 ‘깊이’가 핵심입니다.<br/>"
+            "전공 내 세부 트랙, 진로 연결 가능 분야를 명확히 하고 "
+            "수업·프로젝트·포트폴리오를 하나의 스토리로 묶는 전략이 적합합니다."
+        )
     elif plan == "복수전공 희망":
-        plan_msg = """
-        두 전공이 어떻게 연결되는지가 핵심입니다.  
-        단순 병행이 아니라  
-        **기존 전공을 확장하는 방향의 복수전공**을 설계해야 합니다.
-        """
+        plan_msg = (
+            "복수전공은 ‘조합의 논리’가 중요합니다.<br/>"
+            "현재 전공에서 이미 확보한 역량이 무엇인지 정리한 뒤, "
+            "이를 확장·보완할 수 있는 전공을 선택해야 시너지가 발생합니다."
+        )
     else:
-        plan_msg = """
-        전과 이후를 대비해  
-        현재 전공에서 이미 확보한  
-        **기술·사고방식·결과물을 명확히 정리**해두는 것이 중요합니다.
-        """
+        plan_msg = (
+            "전과를 고려한다면, 지금까지의 전공을 ‘버리지 않는 전략’이 필요합니다.<br/>"
+            "기존 전공에서 축적한 지식·툴·사고방식을 "
+            "새 전공에서 어떻게 재활용할 수 있는지 정의하는 것이 핵심입니다."
+        )
 
-    # 학점 기반 조언
-    credit_msg = f"""
-    현재까지 전공 {major_credit}학점, 교양 {liberal_credit}학점을 이수했습니다.  
-    이는 전공 이해도가 형성되기 시작하는 단계로,  
-    **지금부터의 선택이 커리어 방향에 큰 영향을 미칩니다.**
-    """
-
-    return grade_msg, plan_msg, credit_msg
+    return grade_msg, plan_msg
 
 # -----------------------------
 # CARD FLIP COMPONENT
@@ -186,7 +176,7 @@ def flip_card(title, content, emoji):
     <style>
     .card-container {{
         width: 100%;
-        height: 300px;
+        height: 260px;
         perspective: 1000px;
         margin-bottom: 30px;
     }}
@@ -207,7 +197,7 @@ def flip_card(title, content, emoji):
         height: 100%;
         backface-visibility: hidden;
         border-radius: 18px;
-        padding: 28px;
+        padding: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -224,7 +214,7 @@ def flip_card(title, content, emoji):
         color: #ffffff;
         transform: rotateY(180deg);
         font-size: 1rem;
-        line-height: 1.7;
+        line-height: 1.6;
     }}
     </style>
 
@@ -238,46 +228,52 @@ def flip_card(title, content, emoji):
             </div>
         </div>
     </div>
-    """, height=330)
+    """, height=300)
 
 # -----------------------------
-# RESULT (버튼 클릭 시)
+# RESULT
 # -----------------------------
 if analyze:
-    grade_msg, plan_msg, credit_msg = diagnose_status(gpa, major_credit, plan)
+    grade_msg, plan_msg = diagnose_status(gpa, plan)
 
     st.markdown("<div class='section-title'>📌 맞춤 분석 결과</div>", unsafe_allow_html=True)
 
+    # ⭐ 수정됨: 내용 대폭 확장
     flip_card(
-        "현재 상태 종합 진단",
+        "현재 상태 진단",
         f"""
-        전공: {major}<br/>
-        학기: {semester}<br/>
-        GPA: {gpa} / 4.3<br/><br/>
-        {grade_msg}
+        <b>전공:</b> {major}<br/>
+        <b>현재 학기:</b> {semester}<br/>
+        <b>GPA:</b> {gpa} / 4.3<br/><br/>
+        {grade_msg}<br/><br/>
+        지금 단계에서는 ‘잘하고 있는 것’과 ‘더 가져가야 할 것’을 
+        구분해 정리하는 작업이 특히 중요합니다.
         """,
         "📊"
     )
 
     flip_card(
-        "전공 계획에 따른 전략",
+        "전공 기반 전략 방향",
         f"""
+        <b>전공 이수 학점:</b> {major_credit}학점<br/>
+        <b>교양 이수 학점:</b> {liberal_credit}학점<br/><br/>
         {plan_msg}<br/><br/>
-        {credit_msg}
+        전공 선택은 ‘전공명’보다 
+        <b>전공을 통해 설명할 수 있는 나의 역량</b>이 핵심입니다.
         """,
         "🧭"
     )
 
     flip_card(
-        "다음 학기 실행 To-Do",
+        "다음 학기 To-Do List",
         """
-        ✅ 전공 핵심 과목 3개 선정 및 정리<br/>
-        ✅ 지금까지의 전공 결과물 구조화<br/>
-        ✅ 전공 선택지별 시나리오 비교<br/><br/>
-        🎯 “지금 할 수 있는 것”부터 명확히 실행하세요
+        ✅ 지금까지 들은 전공 수업을 기능/역량 기준으로 재분류<br/>
+        ✅ 성적이 잘 나온 과목과 결과물을 중심으로 핵심 스토리 정리<br/>
+        ✅ 전공 선택지별 (유지/복수/전과) 리스크와 기회 비교<br/><br/>
+        🎯 목표는 ‘결정을 미루지 않을 수 있는 판단 기준 만들기’입니다.
         """,
         "📝"
     )
 
     st.markdown("---")
-    st.markdown("✨ **MajorPass는 선택을 대신하지 않고, 판단 기준을 제공합니다.**")
+    st.markdown("✨ **MajorPass는 ‘정답’을 주지 않고, 지금의 상태에서 가장 합리적인 선택 기준을 설계하도록 돕습니다.**")
