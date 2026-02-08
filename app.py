@@ -2,13 +2,32 @@ import streamlit as st
 import time
 import streamlit.components.v1 as components
 
+# -----------------------------
+# PAGE CONFIG
+# -----------------------------
 st.set_page_config(
     page_title="MajorPass",
     layout="wide"
 )
 
 # -----------------------------
-# GLOBAL STYLE (Yellow Background)
+# SIDEBAR – API KEY
+# -----------------------------
+with st.sidebar:
+    st.markdown("## 🔑 API 설정")
+    api_key = st.text_input(
+        "OpenAI API Key",
+        type="password",
+        help="향후 개인 맞춤 분석 고도화를 위해 사용됩니다."
+    )
+    st.markdown("---")
+    st.markdown("""
+    **MajorPass는**
+    입력된 정보를 외부에 저장하지 않습니다.
+    """)
+
+# -----------------------------
+# GLOBAL STYLE
 # -----------------------------
 st.markdown("""
 <style>
@@ -18,30 +37,26 @@ html, body, [data-testid="stApp"] {
     font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
 }
 
-/* Remove default padding */
 .block-container {
     padding-top: 2rem;
 }
 
-/* Title */
 .major-title {
-    font-size: 4.5rem;
+    font-size: 4.8rem;
     font-weight: 800;
     text-align: center;
-    margin-bottom: 0.5rem;
 }
 
 .major-sub {
     font-size: 1.4rem;
     text-align: center;
-    opacity: 0.85;
+    margin-top: 0.5rem;
 }
 
-/* Section title */
 .section-title {
     font-size: 1.8rem;
     font-weight: 700;
-    margin: 2.5rem 0 1rem 0;
+    margin: 3rem 0 1.2rem 0;
 }
 </style>
 """, unsafe_allow_html=True)
@@ -67,30 +82,55 @@ splash.empty()
 # -----------------------------
 # USER INPUT
 # -----------------------------
-st.markdown("<div class='section-title'>🎓 나의 현재 상황 입력</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>🎓 나의 현재 상황</div>", unsafe_allow_html=True)
 
 col1, col2 = st.columns(2)
 
 with col1:
-    major = st.text_input("현재 전공 (풀네임 입력)", placeholder="예: 실내건축학과")
+    major = st.text_input(
+        "현재 전공 (풀네임 입력)",
+        placeholder="예: 실내건축학과"
+    )
     semester = st.selectbox(
         "현재 학년 / 학기",
-        [f"{y}학년 {s}학기" for y in range(1,5) for s in ["1", "2"]]
+        [f"{y}학년 {s}학기" for y in range(1, 5) for s in ["1", "2"]]
     )
 
 with col2:
-    major_plan = st.selectbox(
-        "복수전공 / 전과 희망 여부",
+    plan = st.selectbox(
+        "전공 계획",
         ["본전공 유지", "복수전공 희망", "전과 희망"]
     )
     gpa = st.slider("전체 GPA (4.3 만점)", 0.0, 4.3, 3.5, 0.01)
 
-st.markdown("#### 📊 이수 학점")
+st.markdown("#### 📊 이수 학점 현황")
 c1, c2 = st.columns(2)
 with c1:
     major_credit = st.number_input("전공 이수 학점", 0, 150, 45)
 with c2:
     liberal_credit = st.number_input("교양 이수 학점", 0, 150, 30)
+
+# -----------------------------
+# LOGIC – USER-BASED ANALYSIS
+# -----------------------------
+def diagnose_status(gpa, major_credit, plan):
+    if gpa >= 3.8:
+        grade_msg = "성적 측면에서 매우 안정적인 상태입니다."
+    elif gpa >= 3.3:
+        grade_msg = "성적은 무난하지만, 방향성이 중요해지는 구간입니다."
+    else:
+        grade_msg = "앞으로의 학기 전략 설계가 특히 중요합니다."
+
+    if plan == "본전공 유지":
+        plan_msg = "현재 전공을 깊이 있게 확장하는 전략이 적합합니다."
+    elif plan == "복수전공 희망":
+        plan_msg = "기존 전공과의 연결 지점을 고려한 선택이 중요합니다."
+    else:
+        plan_msg = "전환 이후 활용 가능한 기존 전공 자산을 정리하는 것이 핵심입니다."
+
+    return grade_msg, plan_msg
+
+grade_msg, plan_msg = diagnose_status(gpa, major_credit, plan)
 
 # -----------------------------
 # CARD FLIP COMPONENT
@@ -122,7 +162,6 @@ def flip_card(title, content, emoji):
         backface-visibility: hidden;
         border-radius: 18px;
         padding: 24px;
-        box-sizing: border-box;
         display: flex;
         align-items: center;
         justify-content: center;
@@ -156,59 +195,43 @@ def flip_card(title, content, emoji):
     """, height=300)
 
 # -----------------------------
-# ANALYSIS SECTION
+# RESULT
 # -----------------------------
-st.markdown("<div class='section-title'>📌 분석 결과</div>", unsafe_allow_html=True)
+st.markdown("<div class='section-title'>📌 맞춤 분석 결과</div>", unsafe_allow_html=True)
 
 flip_card(
-    "현재 상황 분석",
+    "현재 상태 진단",
     f"""
-    • 전공: {major}<br/>
-    • 학기: {semester}<br/>
-    • GPA: {gpa} / 4.3<br/>
-    • 전공 학점 {major_credit}학점 이수<br/>
-    <br/>
-    👉 전공 기반은 이미 형성 단계에 있으며,
-    방향성만 명확히 잡으면 강점으로 발전 가능
+    전공: {major}<br/>
+    현재 학기: {semester}<br/>
+    GPA: {gpa} / 4.3<br/><br/>
+    {grade_msg}
     """,
     "📊"
 )
 
 flip_card(
-    "전공 기반 커리어 로드맵",
+    "전공 기반 전략 방향",
     f"""
-    1️⃣ 전공 역량 정제 (포트폴리오 중심)<br/>
-    2️⃣ 광고·브랜드 공간 사례 분석<br/>
-    3️⃣ 제일기획 / 이노션 스타일 리서치<br/>
-    <br/>
-    👉 공간 + 브랜드 스토리텔링 융합 전략
+    전공 이수 학점: {major_credit}학점<br/>
+    교양 이수 학점: {liberal_credit}학점<br/><br/>
+    {plan_msg}
     """,
     "🧭"
 )
 
 flip_card(
-    "추천 To-Do List",
+    "다음 학기 To-Do List",
     """
-    ✅ 브랜드 팝업스토어 분석 프로젝트<br/>
-    ✅ 공간 × 광고 레퍼런스 아카이빙<br/>
-    ✅ UX / 브랜드 전략 기초 학습<br/>
-    <br/>
-    🎯 ‘전공 = 결과물’로 증명하기
+    ✅ 전공 수업 중 핵심 과목 정리<br/>
+    ✅ 현재까지의 전공 결과물 정리<br/>
+    ✅ 향후 선택지(유지/확장/전환) 비교<br/><br/>
+    🎯 ‘지금 상태에서 무엇을 해야 하는지’에 집중
     """,
     "📝"
 )
 
 st.markdown("---")
-st.markdown("✨ **MajorPass는 전공을 선택이 아닌 ‘자산’으로 바꾸는 도구입니다.**")
+st.markdown("✨ **MajorPass는 ‘정답’을 주지 않고, 지금의 상태에 맞는 방향을 제시합니다.**")
 
-# -----------------------------
-# NEXT IDEAS
-# -----------------------------
-st.markdown("""
-### 🚀 다음 단계로 발전시킬 수 있는 기능
-- 결과 카드 **PDF / 이미지 저장**
-- 제일기획·이노션 **직무별 맞춤 카드**
-- 졸업 시점 기준 **타임라인 시각화**
-- 포트폴리오 체크리스트 자동 생성
-""")
 
