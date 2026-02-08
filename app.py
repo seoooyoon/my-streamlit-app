@@ -2,222 +2,200 @@ import streamlit as st
 from openai import OpenAI
 
 # -------------------------------------------------
-# 페이지 설정
+# Page Config
 # -------------------------------------------------
 st.set_page_config(
     page_title="MajorPass",
     page_icon="🎓",
-    layout="centered"
+    layout="wide"
 )
 
 # -------------------------------------------------
-# CSS: 블랙 배경 + 화이트 도트
+# High-End CSS (Agency Style)
 # -------------------------------------------------
 st.markdown("""
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap');
+
 html, body, [data-testid="stApp"] {
-    background-color: #0f0f0f;
-    background-image: radial-gradient(#ffffff 0.6px, transparent 0.6px);
-    background-size: 22px 22px;
-    color: white;
+    background-color: #0B0B0B;
+    font-family: 'Inter', sans-serif;
+    color: #FFFFFF;
 }
 
-h1, h2, h3, h4, h5, h6, p, div, label {
-    color: white !important;
+section[data-testid="stSidebar"] {
+    background-color: #0E0E0E;
 }
 
-[data-testid="stSidebar"] {
-    background-color: #111111;
+h1 {
+    font-size: 3rem;
+    font-weight: 700;
+    letter-spacing: -1px;
 }
 
-.stSelectbox div, .stTextInput input, .stTextArea textarea {
-    background-color: #1c1c1c;
-    color: white;
+.subtitle {
+    color: #B5B5B5;
+    font-size: 1.1rem;
+    margin-bottom: 40px;
+}
+
+.card {
+    background: linear-gradient(145deg, #111111, #0C0C0C);
+    border-radius: 18px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.card-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.card-desc {
+    color: #CFCFCF;
+    line-height: 1.6;
 }
 
 .stButton button {
-    background-color: white;
+    background: white;
     color: black;
+    border-radius: 999px;
+    padding: 10px 26px;
     font-weight: 600;
-    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.stButton button:hover {
+    transform: translateY(-1px);
+    background: #EAEAEA;
+}
+
+.stTabs [data-baseweb="tab"] {
+    font-size: 0.95rem;
+    color: #999999;
+}
+
+.stTabs [aria-selected="true"] {
+    color: white;
+}
+
+hr {
+    border: none;
+    border-top: 1px solid #222;
+    margin: 40px 0;
 }
 </style>
 """, unsafe_allow_html=True)
 
 # -------------------------------------------------
-# 사이드바: API Key
+# Sidebar - API
 # -------------------------------------------------
-st.sidebar.title("🔑 API 설정")
+st.sidebar.title("API 설정")
 api_key = st.sidebar.text_input("OpenAI API Key", type="password")
 
 st.sidebar.markdown("---")
-st.sidebar.markdown("**MajorPass**  \n전공을 커리어 자산으로")
+st.sidebar.markdown("""
+**MajorPass**  
+전공을 커리어 자산으로
+""")
 
 # -------------------------------------------------
-# 연세대학교 본캠퍼스 단과대 / 학과 (학부)
+# Yonsei Colleges (Main Campus)
 # -------------------------------------------------
-yonsei_colleges = {
-    "문과대학": [
-        "국어국문학과", "중어중문학과", "영어영문학과",
-        "불어불문학과", "독어독문학과", "사학과",
-        "철학과", "심리학과"
-    ],
-    "상경대학": [
-        "경제학부", "응용통계학과"
-    ],
-    "경영대학": [
-        "경영학과"
-    ],
-    "이과대학": [
-        "수학과", "물리학과", "화학과",
-        "지구시스템과학과", "천문우주학과"
-    ],
-    "공과대학": [
-        "건축공학과", "건설환경공학과", "기계공학부",
-        "전기전자공학부", "신소재공학과",
-        "화공생명공학과", "산업공학과",
-        "시스템반도체공학과"
-    ],
-    "생명시스템대학": [
-        "생명공학과", "시스템생물학과", "생화학과"
-    ],
-    "신과대학": [
-        "신학과"
-    ],
-    "사회과학대학": [
-        "정치외교학과", "행정학과", "사회학과",
-        "언론홍보영상학부", "문헌정보학과"
-    ],
-    "생활과학대학": [
-        "의류환경학과", "식품영양학과", "실내건축학과",
-        "아동·가족학과"
-    ],
-    "교육과학대학": [
-        "교육학과", "체육교육학과"
-    ],
-    "음악대학": [
-        "교회음악과", "성악과", "작곡과",
-        "기악과"
-    ],
-    "간호대학": [
-        "간호학과"
-    ],
-    "의과대학": [
-        "의예과"
-    ],
-    "치과대학": [
-        "치의예과"
-    ],
-    "약학대학": [
-        "약학과"
-    ],
-    "언더우드국제대학": [
-        "UIC (국제학부)"
-    ]
+yonsei = {
+    "문과대학": ["국어국문학과","영어영문학과","사학과","철학과","심리학과"],
+    "상경대학": ["경제학부","응용통계학과"],
+    "경영대학": ["경영학과"],
+    "이과대학": ["수학과","물리학과","화학과","지구시스템과학과"],
+    "공과대학": ["건축공학과","기계공학부","전기전자공학부","산업공학과"],
+    "생활과학대학": ["실내건축학과","의류환경학과","식품영양학과"],
+    "사회과학대학": ["정치외교학과","행정학과","언론홍보영상학부"],
+    "의과대학": ["의예과"],
+    "간호대학": ["간호학과"],
+    "약학대학": ["약학과"],
+    "언더우드국제대학": ["UIC"]
 }
 
 # -------------------------------------------------
-# 메인 UI
+# Header
 # -------------------------------------------------
-st.title("🎓 MajorPass")
-st.subheader("Path to Pass")
-st.markdown("""
-전과를 할지,  
-복수전공을 할지,  
-혹은 전공을 유지한 채 다른 커리어로 갈지.
-
-MajorPass는 **결정을 대신하지 않습니다.**  
-대신, **판단 기준과 다음 행동**을 제공합니다.
-""")
-
-st.divider()
+st.markdown("<h1>MajorPass</h1>", unsafe_allow_html=True)
+st.markdown("<div class='subtitle'>Your major is not a limit. It’s a material.</div>", unsafe_allow_html=True)
 
 # -------------------------------------------------
-# 사용자 입력
+# Input Section
 # -------------------------------------------------
-college = st.selectbox("단과대 선택 (연세대 본캠퍼스)", list(yonsei_colleges.keys()))
-department = st.selectbox("전공 선택", yonsei_colleges[college])
-
-year = st.selectbox("현재 학년", ["1학년", "2학년", "3학년", "4학년"])
-
-career_goal = st.text_input(
-    "희망 진로 / 관심 분야",
-    placeholder="예: 광고, 브랜딩, UX, 콘텐츠 기획"
-)
-
-concern = st.selectbox(
-    "현재 가장 큰 고민",
-    ["전과", "복수전공", "전공 유지", "진로 불안"]
-)
-
-anxiety = st.text_area(
-    "불안하거나 걱정되는 점",
-    placeholder="예: 전공 활용도, 취업 가능성, 졸업 시기"
-)
+with st.container():
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    college = st.selectbox("단과대", yonsei.keys())
+    major = st.selectbox("전공", yonsei[college])
+    year = st.selectbox("학년", ["1학년","2학년","3학년","4학년"])
+    goal = st.text_input("희망 진로", placeholder="광고, 브랜딩, UX, 콘텐츠 기획")
+    concern = st.selectbox("고민 유형", ["전과","복수전공","전공 유지","진로 불안"])
+    anxiety = st.text_area("불안 요소", placeholder="취업, 전공 활용도, 졸업 시기")
+    st.markdown("</div>", unsafe_allow_html=True)
 
 # -------------------------------------------------
-# OpenAI 함수 (🔥 최신 API)
+# OpenAI Function
 # -------------------------------------------------
-def get_majorpass_advice(info, api_key):
+def analyze(info, api_key):
     client = OpenAI(api_key=api_key)
 
     prompt = f"""
-당신은 대학생 진로 상담 전문 AI 코치입니다.
-목표는 전공을 포기하게 하는 것이 아니라,
-전공을 커리어 자산으로 재해석하는 것입니다.
+당신은 광고회사 전략팀 출신의 대학생 진로 코치입니다.
+톤은 차분하고 설득력 있게, 정보는 구조적으로 제시하세요.
 
 [사용자 정보]
-- 학교: 연세대학교 본캠퍼스
-- 단과대: {info['college']}
-- 전공: {info['department']}
-- 학년: {info['year']}
-- 희망 진로: {info['career']}
-- 고민 유형: {info['concern']}
-- 불안 요소: {info['anxiety']}
+전공: {info['major']}
+단과대: {info['college']}
+학년: {info['year']}
+희망 진로: {info['goal']}
+고민: {info['concern']}
+불안: {info['anxiety']}
 
-순서:
-1. 상황 요약 및 공감
-2. 현재 전공에서 축적된 역량
-3. 희망 진로 관점에서의 연결 가능성
-4. 전과 / 복수전공 / 유지 비교
-5. 전공을 커리어 자산으로 쓰는 전략
-6. 지금 당장 할 수 있는 To-do
+아래 항목별로 나눠서 작성하세요.
+### Situation
+### Major as Asset
+### Choice Comparison
+### Recommended Strategy
+### Next Actions
 """
 
-    response = client.chat.completions.create(
+    res = client.chat.completions.create(
         model="gpt-4o-mini",
-        messages=[
-            {"role": "system", "content": "너는 현실적이고 공감 능력이 높은 진로 코치다."},
-            {"role": "user", "content": prompt}
-        ],
-        temperature=0.7
+        messages=[{"role":"user","content":prompt}],
+        temperature=0.6
     )
 
-    return response.choices[0].message.content
+    return res.choices[0].message.content
 
 # -------------------------------------------------
-# 실행
+# Run
 # -------------------------------------------------
-if st.button("🚀 MajorPass 분석 시작"):
+if st.button("분석 시작"):
     if not api_key:
-        st.warning("사이드바에 OpenAI API Key를 입력해주세요.")
-    elif not career_goal:
-        st.warning("희망 진로를 입력해주세요.")
+        st.warning("API Key를 입력해주세요.")
     else:
-        with st.spinner("전공을 커리어 자산으로 분석 중..."):
-            result = get_majorpass_advice({
+        with st.spinner("Strategic thinking in progress..."):
+            output = analyze({
                 "college": college,
-                "department": department,
+                "major": major,
                 "year": year,
-                "career": career_goal,
+                "goal": goal,
                 "concern": concern,
                 "anxiety": anxiety
             }, api_key)
 
-        st.divider()
-        st.header("📊 분석 결과")
-        st.markdown(result)
-        st.success("결정은 당신의 몫입니다. MajorPass는 기준을 제공합니다.")
+        sections = output.split("###")
+
+        tabs = st.tabs(["Situation","Asset","Comparison","Strategy","Actions"])
+
+        for tab, sec in zip(tabs, sections[1:]):
+            with tab:
+                st.markdown(f"<div class='card'><div class='card-desc'>{sec.strip()}</div></div>", unsafe_allow_html=True)
+
 
 
 
