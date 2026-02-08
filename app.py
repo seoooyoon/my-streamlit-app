@@ -1,251 +1,211 @@
 import streamlit as st
-import streamlit.components.v1 as components
+import time
 
-# -----------------------------
-# PAGE CONFIG
-# -----------------------------
+# ----------------------
+# 기본 설정
+# ----------------------
 st.set_page_config(
-    page_title="MajorPass",
+    page_title="Major: Path to Pass",
     layout="wide"
 )
 
-# -----------------------------
-# SIDEBAR – API KEY
-# -----------------------------
-with st.sidebar:
-    st.markdown("## 🔑 API 설정")
-    api_key = st.text_input(
-        "OpenAI API Key",
-        type="password",
-        help="향후 개인 맞춤 분석 고도화를 위해 사용됩니다."
-    )
-    st.markdown("---")
-    st.markdown("""
-    **MajorPass는**
-    입력된 정보를 저장하거나 외부로 전송하지 않습니다.
-    """)
-
-# -----------------------------
-# GLOBAL STYLE
-# -----------------------------
+# ----------------------
+# 전체 배경 & 카드 스타일
+# ----------------------
 st.markdown("""
 <style>
-html, body, [data-testid="stApp"] {
-    background-color: #FFF6CC;
-    color: #1A1A1A;
-    font-family: 'Pretendard', 'Apple SD Gothic Neo', sans-serif;
+body {
+    background-color: #FFF8CC;
 }
 
-.block-container {
-    padding-top: 2rem;
+.stApp {
+    background-color: #FFF8CC;
+}
+
+/* 타이틀 페이드 */
+.fade-title {
+    text-align: center;
+    font-size: 48px;
+    font-weight: 800;
+    margin-top: 200px;
+    animation: fadeOut 3s forwards;
 }
 
 @keyframes fadeOut {
     0% { opacity: 1; }
     70% { opacity: 1; }
-    100% { opacity: 0; visibility: hidden; }
+    100% { opacity: 0; }
 }
 
-.splash {
-    height: 70vh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    animation: fadeOut 3s forwards;
+/* 카드 컨테이너 */
+.card-container {
+    perspective: 1200px;
+    width: 100%;
+    height: 320px;
+    margin-bottom: 40px;
 }
 
-.major-title {
-    font-size: 4.8rem;
-    font-weight: 800;
-    text-align: center;
+/* 카드 */
+.card {
+    width: 100%;
+    height: 100%;
+    background-color: transparent;
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.8s;
+    cursor: pointer;
 }
 
-.major-sub {
-    font-size: 1.4rem;
-    text-align: center;
-    margin-top: 0.5rem;
+/* 뒤집힘 */
+.card.flipped {
+    transform: rotateY(180deg);
 }
 
-.section-title {
-    font-size: 1.8rem;
+/* 카드 앞/뒤 공통 */
+.card-face {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 20px;
+    padding: 30px;
+    box-sizing: border-box;
+    backface-visibility: hidden;
+    overflow-y: auto;
+    word-break: keep-all;
+    line-height: 1.7;
+}
+
+/* 앞면 */
+.card-front {
+    background-color: #111;
+    color: #FFF;
+    font-size: 22px;
     font-weight: 700;
-    margin: 3rem 0 1.2rem 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* 뒷면 */
+.card-back {
+    background-color: #1C1C1C;
+    color: #F2F2F2;
+    transform: rotateY(180deg);
+    font-size: 16px;
+}
+
+/* 스크롤바 정리 */
+.card-face::-webkit-scrollbar {
+    width: 6px;
+}
+.card-face::-webkit-scrollbar-thumb {
+    background-color: #666;
+    border-radius: 3px;
 }
 </style>
 """, unsafe_allow_html=True)
 
-# -----------------------------
-# SPLASH
-# -----------------------------
-st.markdown("""
-<div class="splash">
-    <div class="major-title">MajorPass</div>
-    <div class="major-sub">
-        전공을 커리어 자산으로 정리합니다<br/>
-        <b>Path to PASS!</b>
+# ----------------------
+# 세션 상태
+# ----------------------
+if "show_main" not in st.session_state:
+    st.session_state.show_main = False
+
+if "show_result" not in st.session_state:
+    st.session_state.show_result = False
+
+# ----------------------
+# 인트로 화면
+# ----------------------
+if not st.session_state.show_main:
+    st.markdown("""
+    <div class="fade-title">
+        Major : Path to Pass
     </div>
-</div>
-""", unsafe_allow_html=True)
+    """, unsafe_allow_html=True)
+    time.sleep(3)
+    st.session_state.show_main = True
+    st.experimental_rerun()
 
-# -----------------------------
-# USER INPUT
-# -----------------------------
-st.markdown("<div class='section-title'>🎓 나의 현재 상황</div>", unsafe_allow_html=True)
+# ----------------------
+# 메인 화면
+# ----------------------
+st.title("🎓 나의 전공 선택을 정리하는 시간")
 
-col1, col2 = st.columns(2)
+st.markdown("### 나의 현재 상황")
 
-with col1:
-    major = st.text_input("현재 전공 (풀네임 입력)")
-    semester = st.selectbox(
-        "현재 학년 / 학기",
-        [f"{y}학년 {s}학기" for y in range(1, 5) for s in ["1", "2"]]
-    )
-
-with col2:
-    plan = st.selectbox(
-        "전공 계획",
-        ["본전공 유지", "복수전공 희망", "전과 희망"]
-    )
-    gpa = st.slider("전체 GPA (4.3 만점)", 0.0, 4.3, 3.5, 0.01)
-
-st.markdown("#### 📊 이수 학점 현황")
-c1, c2 = st.columns(2)
-with c1:
-    major_credit = st.number_input("전공 이수 학점", 0, 150, 45)
-with c2:
-    liberal_credit = st.number_input("교양 이수 학점", 0, 150, 30)
-
-# ⭐️ 관심사 입력 복구
-interest = st.text_area(
-    "💡 현재 관심 분야 / 진로 방향 (자유롭게 작성)",
-    placeholder="예: 기획, 콘텐츠 제작, 브랜딩, UX, 데이터 분석 등",
-    height=100
+current_status = st.text_area(
+    "지금 나의 고민과 상황을 자유롭게 적어주세요",
+    height=120
 )
 
-# -----------------------------
-# BUTTON
-# -----------------------------
-st.markdown("<br/>", unsafe_allow_html=True)
-analyze = st.button("🔍 분석 결과 확인하기", use_container_width=True)
+interest = st.text_input(
+    "현재 가장 관심 있는 분야 (예: 브랜딩, 공간, 콘텐츠, UX 등)"
+)
 
-# -----------------------------
-# CARD COMPONENT (가독성 개선)
-# -----------------------------
-def flip_card(title, content, emoji):
-    components.html(f"""
-    <style>
-    .card-container {{
-        width: 100%;
-        height: 360px;
-        perspective: 1200px;
-        margin-bottom: 40px;
-    }}
-    .card {{
-        width: 100%;
-        height: 100%;
-        position: relative;
-        transition: transform 0.8s;
-        transform-style: preserve-3d;
-        cursor: pointer;
-    }}
-    .card.flip {{
-        transform: rotateY(180deg);
-    }}
-    .card-face {{
-        position: absolute;
-        width: 100%;
-        height: 100%;
-        backface-visibility: hidden;
-        border-radius: 18px;
-        padding: 28px;
-        box-shadow: 0 12px 30px rgba(0,0,0,0.15);
-    }}
-    .card-front {{
-        background: #ffffff;
-        font-size: 1.6rem;
-        font-weight: 700;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-    }}
-    .card-back {{
-        background: #1A1A1A;
-        color: #ffffff;
-        transform: rotateY(180deg);
-        font-size: 1rem;
-        line-height: 1.75;
-        overflow-y: auto;
-    }}
-    </style>
+st.markdown("<br>", unsafe_allow_html=True)
 
-    <div class="card-container">
-        <div class="card" onclick="this.classList.toggle('flip')">
+if st.button("🔍 분석 결과 확인하기"):
+    st.session_state.show_result = True
+
+# ----------------------
+# 분석 결과
+# ----------------------
+if st.session_state.show_result:
+
+    st.markdown("---")
+    st.subheader("📌 맞춤 분석 결과")
+
+    result_text = """
+이번 학기 당신에게 가장 중요한 키워드는 ‘결정’이 아니라 ‘정리’입니다.  
+아직 명확한 진로가 보이지 않는 상태는 실패가 아니라, 오히려 매우 건강한 과정에 가깝습니다.  
+지금까지 수강한 전공 과목과 프로젝트, 그리고 자연스럽게 흥미가 갔던 주제를 차분히 돌아볼 필요가 있습니다.  
+특히 당신이 반복해서 관심을 보인 영역은 단순한 호기심이 아니라 방향성이 될 가능성이 큽니다.  
+
+전공을 유지할지, 복수전공을 할지, 혹은 전과를 고려할지는 감정이 아닌 구조로 판단해야 합니다.  
+현재 전공에서 ‘버티고 있는 이유’와 ‘재미를 느낀 순간’을 분리해서 생각해보는 것이 중요합니다.  
+만약 과제의 결과보다 기획 과정이나 컨셉 설정에서 더 큰 만족을 느꼈다면, 이는 강력한 힌트입니다.  
+
+관심 분야와 전공이 완전히 일치하지 않더라도 문제는 없습니다.  
+요즘 산업은 하나의 전공보다는 전공 간의 연결 능력을 더 높게 평가합니다.  
+지금 당신에게 필요한 것은 선택을 서두르는 용기가 아니라, 연결을 설계하는 시야입니다.  
+
+정리된 상태에서 내린 선택은 흔들리지 않습니다.  
+반대로 불안한 상태에서의 결정은 언제든 번복될 가능성이 큽니다.  
+이번 학기는 답을 찾기보다, 스스로에 대한 이해도를 높이는 시간으로 설정해보세요.  
+그 과정이 끝나면, 다음 선택은 생각보다 자연스럽게 이어질 것입니다.
+"""
+
+    # 카드 1
+    st.markdown(f"""
+    <div class="card-container" onclick="this.querySelector('.card').classList.toggle('flipped')">
+        <div class="card">
             <div class="card-face card-front">
-                {emoji}<br/>{title}
+                📍 지금 당신에게 가장 중요한 한 가지
             </div>
             <div class="card-face card-back">
-                {content}
+                {result_text}
             </div>
         </div>
     </div>
-    """, height=400)
+    """, unsafe_allow_html=True)
 
-# -----------------------------
-# RESULT
-# -----------------------------
-if analyze:
+    # 카드 2
+    st.markdown("""
+    <div class="card-container" onclick="this.querySelector('.card').classList.toggle('flipped')">
+        <div class="card">
+            <div class="card-face card-front">
+                🔎 다음 단계에서 해보면 좋은 것
+            </div>
+            <div class="card-face card-back">
+                ✔ 관심 분야와 연결되는 과제 기록 정리하기<br><br>
+                ✔ 전공 수업 중 가장 몰입했던 순간 적어보기<br><br>
+                ✔ 복수전공/연계전공 커리큘럼 비교해보기<br><br>
+                ✔ ‘잘한 결과’보다 ‘재밌었던 과정’ 기준으로 정리하기
+            </div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
 
-    flip_card(
-        "현재 상태 진단",
-        f"""
-        현재 당신은 <b>{major}</b> 전공을 이수 중이며, {semester}에 해당합니다.<br/><br/>
+    st.success("✨ 이 분석은 ‘결정’을 강요하지 않습니다. 당신이 흔들리지 않도록 돕기 위한 정리입니다.")
 
-        GPA {gpa} 기준으로 볼 때, 지금은 성적 자체보다도
-        ‘지금까지 어떤 선택을 해왔고, 앞으로 무엇을 남길 수 있는가’를
-        정리하는 것이 더 중요한 시점입니다.<br/><br/>
-
-        특히 관심 분야로 작성한 <b>{interest}</b>는
-        향후 전공 선택이나 확장 방향을 판단하는 데 중요한 힌트가 됩니다.
-        """,
-        "📊"
-    )
-
-    flip_card(
-        "전공 기반 전략 방향",
-        f"""
-        현재까지 전공 이수 학점은 {major_credit}학점,
-        교양 이수 학점은 {liberal_credit}학점입니다.<br/><br/>
-
-        선택한 전공 계획인 <b>{plan}</b>은
-        단순히 제도를 선택하는 문제가 아니라,
-        지금까지 쌓아온 전공 경험을 어떻게 활용할 것인가의 문제입니다.<br/><br/>
-
-        중요한 것은 전공을 바꾸는지 여부보다,
-        기존 전공에서 이미 확보한 역량을
-        다음 선택에서도 설명 가능하게 만드는 전략입니다.
-        """,
-        "🧭"
-    )
-
-    flip_card(
-        "다음 학기 전략적 포인트",
-        f"""
-        다음 학기의 핵심 목표는 ‘결정’이 아니라 ‘정리’입니다.<br/><br/>
-
-        지금까지 수강한 전공 과목과 활동을
-        관심 분야인 <b>{interest}</b>와 연결해 정리해보세요.
-        그 과정에서 전공 유지, 복수전공, 전과 중
-        어떤 선택이 가장 자연스럽게 이어지는지 보이기 시작할 것입니다.<br/><br/>
-
-        불안한 상태에서 내린 결정은 쉽게 흔들리지만,
-        정리된 상태에서의 선택은 훨씬 단단합니다.
-        """,
-        "📝"
-    )
-
-    st.markdown("---")
-    st.markdown(
-        "✨ **MajorPass는 선택을 대신하지 않습니다. 대신, 선택을 덜 불안하게 만듭니다.**"
-    )
