@@ -2,21 +2,16 @@ import json
 import os
 import random
 import re
-import textwrap
 from datetime import date, datetime, timedelta
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 import pandas as pd
 import requests
 import streamlit as st
 
-# Optional local extraction (no external key)
-import trafilatura
+import trafilatura  # for extraction
 
-
-# =========================================================
 # Optional OpenAI (LLM)
-# =========================================================
 OPENAI_AVAILABLE = True
 try:
     from openai import OpenAI
@@ -34,16 +29,13 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-# =========================================================
-# THEME / DESIGN (Yonsei-style)
-# =========================================================
-YONSEI_BLUE = "#003876"   # Deep blue vibe (approx)
-ACCENT = "#4F46E5"        # modern accent
-MINT = "#22C55E"
+YONSEI_BLUE = "#003876"
 
 
+# =========================================================
+# ICON (abstract eagle; NOT official logo)
+# =========================================================
 def eagle_svg(color: str = YONSEI_BLUE) -> str:
-    # Simple abstract eagle (original SVG) – not official Yonsei logo.
     return f"""
 <svg width="54" height="54" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <path d="M8 38c10-8 18-12 24-12s14 4 24 12" stroke="{color}" stroke-width="3" stroke-linecap="round"/>
@@ -55,8 +47,10 @@ def eagle_svg(color: str = YONSEI_BLUE) -> str:
 """.strip()
 
 
+# =========================================================
+# (1) GLOBAL STYLE — Deep Navy background + high readability
+# =========================================================
 def inject_css() -> None:
-    # Pretendard CDN (optional). If blocked, fallback fonts still work.
     st.markdown(
         """
 <style>
@@ -64,30 +58,32 @@ def inject_css() -> None:
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 :root{
-  --yonsei: #003876;
-  --accent: #4F46E5;
-  --mint: #22C55E;
-  --bg1: #F7F8FC;
-  --bg2: #EEF2FF;
-  --text: #0B1220;
-  --muted: rgba(11,18,32,0.62);
-  --card: rgba(255,255,255,0.72);
-  --card2: rgba(255,255,255,0.92);
-  --border: rgba(15,23,42,0.10);
-  --shadow: 0 14px 38px rgba(15,23,42,0.12);
+  --navy0: #041024;     /* very deep */
+  --navy1: #06162e;     /* base bg */
+  --navy2: #0a2140;     /* soft panel */
+  --text: #F4F7FF;
+  --muted: rgba(244,247,255,0.72);
+  --card: rgba(255,255,255,0.06);
+  --card2: rgba(255,255,255,0.10);
+  --border: rgba(148,163,184,0.20);
+  --shadow: 0 14px 38px rgba(0,0,0,0.35);
   --radius: 18px;
+  --yonsei: #003876;
+  --accent: #7C3AED;
+  --mint: #22C55E;
 }
 
-/* background */
+/* base */
 html, body, [data-testid="stApp"]{
   font-family: Pretendard, Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   color: var(--text);
 }
+
 [data-testid="stAppViewContainer"]{
   background:
-    radial-gradient(1100px 650px at 10% 12%, rgba(0,56,118,0.14), transparent 60%),
-    radial-gradient(900px 550px at 85% 8%, rgba(79,70,229,0.14), transparent 60%),
-    linear-gradient(180deg, var(--bg1), #FFFFFF 60%);
+    radial-gradient(1100px 650px at 10% 10%, rgba(0,56,118,0.35), transparent 60%),
+    radial-gradient(900px 550px at 85% 8%, rgba(124,58,237,0.25), transparent 60%),
+    linear-gradient(180deg, var(--navy0), var(--navy1) 65%);
   position: relative;
 }
 
@@ -97,12 +93,11 @@ html, body, [data-testid="stApp"]{
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.08;
+  opacity: 0.10;
   mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='https://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
 }
 
-/* page padding */
 .block-container{
   padding-top: 1.1rem;
   padding-bottom: 3rem;
@@ -115,8 +110,39 @@ footer {visibility: hidden;}
 
 /* sidebar */
 section[data-testid="stSidebar"]{
-  background: rgba(255,255,255,0.75) !important;
+  background: rgba(255,255,255,0.04) !important;
   border-right: 1px solid var(--border);
+}
+section[data-testid="stSidebar"] *{
+  color: var(--text) !important;
+}
+
+/* captions / muted */
+div[data-testid="stCaptionContainer"], .stCaption, small{
+  color: var(--muted) !important;
+}
+
+/* labels */
+label{
+  color: rgba(244,247,255,0.86) !important;
+}
+
+/* inputs */
+input, textarea, select{
+  color: var(--text) !important;
+}
+input, textarea{
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid var(--border) !important;
+}
+div[data-baseweb="select"] > div{
+  background: rgba(255,255,255,0.06) !important;
+  border: 1px solid var(--border) !important;
+}
+
+/* links */
+a{
+  color: #93C5FD !important;
 }
 
 /* hero */
@@ -124,7 +150,7 @@ section[data-testid="stSidebar"]{
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
-  background: linear-gradient(120deg, rgba(0,56,118,0.12), rgba(79,70,229,0.10));
+  background: linear-gradient(120deg, rgba(255,255,255,0.08), rgba(255,255,255,0.04));
   padding: 18px 18px;
   margin: 6px 0 18px 0;
   overflow:hidden;
@@ -134,7 +160,7 @@ section[data-testid="stSidebar"]{
   content:"";
   position:absolute;
   inset:-2px;
-  background: radial-gradient(600px 160px at 20% 0%, rgba(255,255,255,0.55), transparent 60%);
+  background: radial-gradient(600px 180px at 20% 0%, rgba(255,255,255,0.22), transparent 60%);
   pointer-events:none;
 }
 .mp-hero-top{
@@ -172,7 +198,7 @@ section[data-testid="stSidebar"]{
   padding: 8px 10px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(255,255,255,0.80);
+  background: rgba(255,255,255,0.06);
   font-size: 0.85rem;
   color: var(--muted);
 }
@@ -187,32 +213,27 @@ section[data-testid="stSidebar"]{
   display:flex;
   align-items:center;
   justify-content:center;
-  background: rgba(255,255,255,0.72);
+  background: rgba(255,255,255,0.06);
   border: 1px solid var(--border);
 }
 
 /* cards */
-.mp-card{
-  background: var(--card);
+.mp-card, .mp-card-solid{
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   padding: 16px 16px;
+  backdrop-filter: blur(10px);
 }
-.mp-card-solid{
-  background: var(--card2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-  padding: 16px 16px;
-}
+.mp-card{ background: var(--card); }
+.mp-card-solid{ background: var(--card2); }
+
 .mp-section{
   font-size: 1.05rem;
   font-weight: 800;
   margin: 10px 0 8px 0;
   letter-spacing: -0.01em;
 }
-.mp-muted{ color: var(--muted); }
 .mp-divider{
   height: 1px;
   background: var(--border);
@@ -221,11 +242,12 @@ section[data-testid="stSidebar"]{
 
 /* digest card */
 .d-card{
-  background: rgba(255,255,255,0.80);
+  background: rgba(255,255,255,0.06);
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 14px 14px;
-  box-shadow: 0 12px 32px rgba(15,23,42,0.10);
+  box-shadow: 0 12px 32px rgba(0,0,0,0.28);
+  backdrop-filter: blur(10px);
 }
 .d-head{
   display:flex;
@@ -252,9 +274,21 @@ section[data-testid="stSidebar"]{
   padding: 6px 8px;
   border-radius: 999px;
   border: 1px solid var(--border);
-  background: rgba(0,56,118,0.06);
+  background: rgba(255,255,255,0.06);
   font-size: 0.82rem;
   margin-right: 6px;
+}
+
+/* metric cards for dark bg */
+div[data-testid="metric-container"]{
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: 0 10px 28px rgba(0,0,0,0.25);
+  padding: 12px 12px;
+}
+div[data-testid="metric-container"] *{
+  color: var(--text) !important;
 }
 
 /* buttons */
@@ -264,7 +298,7 @@ section[data-testid="stSidebar"]{
   font-weight: 700 !important;
 }
 
-/* dataframe */
+/* dataframe edges */
 [data-testid="stDataFrame"]{
   border: 1px solid var(--border);
   border-radius: 14px;
@@ -286,21 +320,20 @@ def init_state() -> None:
     ss = st.session_state
     ss.setdefault("nav", "Profile")
     ss.setdefault("profile", {})
-    ss.setdefault("profile_analysis", None)          # dict
-    ss.setdefault("action_plan_df", None)            # DataFrame
-    ss.setdefault("recommended_keywords", [])        # list[str]
+    ss.setdefault("profile_analysis", None)
+    ss.setdefault("action_plan_df", None)
+    ss.setdefault("recommended_keywords", [])
 
-    ss.setdefault("search_df", None)                 # DataFrame
-    ss.setdefault("digest_result", None)             # dict {digests, overall}
-    ss.setdefault("trend_df", None)                  # DataFrame
-    ss.setdefault("trend_summary", None)             # str
-    ss.setdefault("plan_result", None)               # dict
+    ss.setdefault("search_df", None)
+    ss.setdefault("digest_result", None)
+    ss.setdefault("trend_df", None)
+    ss.setdefault("trend_summary", None)
+    ss.setdefault("plan_result", None)
 
-    ss.setdefault("chat_history", [])                # [{role, content}]
+    ss.setdefault("chat_history", [])
     ss.setdefault("chat_context", {"profile": None, "analysis": None, "digest": None, "trend": None, "plan": None})
-    ss.setdefault("pending_user_message", None)
 
-    ss.setdefault("rewards", [])
+    # achievements (keep existing keys used elsewhere)
     ss.setdefault("achievements", {
         "first_profile": False,
         "first_digest": False,
@@ -311,7 +344,16 @@ def init_state() -> None:
         "night_owl": False,
         "secret_phrase": False,
     })
+
+    # Events used for one-time rewards
     ss.setdefault("events_done", set())
+
+    # (3) Growth rewards state
+    ss.setdefault("xp", 0)
+    ss.setdefault("growth_stage", 0)
+    ss.setdefault("growth_log", [])          # list of {ts, reason, points}
+    ss.setdefault("roadmap_todos", [])       # list of {id, task, done, points, source}
+    ss.setdefault("todos_seeded", False)
 
 
 init_state()
@@ -351,81 +393,87 @@ def llm_enabled(openai_key: str) -> bool:
 
 
 # =========================================================
-# REWARDS (Yonsei themed)
+# (3) GROWTH REWARDS — XP-based character growth
 # =========================================================
-RARITY_POOL = [
-    ("Common", 0.72, "🟦"),
-    ("Rare", 0.22, "🟪"),
-    ("Epic", 0.055, "🟨"),
-    ("Secret", 0.005, "🟥"),
+GROWTH_STAGES = [
+    {"name": "Baby", "emoji": "👶", "min_xp": 0,   "desc": "아직은 아기! 작은 행동부터 시작해요."},
+    {"name": "Kid",  "emoji": "🧒", "min_xp": 25,  "desc": "조금씩 습관이 잡혔어요. 계속!"}, 
+    {"name": "Adult","emoji": "🧑", "min_xp": 60,  "desc": "실행력이 붙기 시작. 산출물이 쌓이는 구간!"},
+    {"name": "Student","emoji": "🧑‍🎓", "min_xp": 100, "desc": "로드맵을 ‘학기 계획’으로 굳혀가요."},
+    {"name": "Pro",  "emoji": "🧑‍💼", "min_xp": 150, "desc": "완성 단계. 이제 결과물을 제출/지원으로 연결!"},
 ]
 
-COLLECTIBLES = [
-    ("Eagle Feather", "🪶"),
-    ("Torch Spark", "🔥"),
-    ("Book Stamp", "📘"),
-    ("Shield Badge", "🛡️"),
-    ("Momentum Booster", "🚀"),
-    ("Focus Token", "🎯"),
-    ("Insight Gem", "💎"),
-]
 
-SECRET_PHRASE = "path to pass"
+def _current_stage_from_xp(xp: int) -> int:
+    stage = 0
+    for i, stg in enumerate(GROWTH_STAGES):
+        if xp >= stg["min_xp"]:
+            stage = i
+    return stage
+
+
+def award_xp(points: int, reason: str) -> None:
+    ss = st.session_state
+    if points <= 0:
+        return
+
+    before_stage = _current_stage_from_xp(ss.xp)
+    ss.xp += points
+    ss.growth_log.append({"ts": now_str(), "reason": reason, "points": points})
+
+    after_stage = _current_stage_from_xp(ss.xp)
+    if after_stage != before_stage:
+        ss.growth_stage = after_stage
+        st.toast(f"캐릭터 성장! {GROWTH_STAGES[after_stage]['emoji']}  ({GROWTH_STAGES[after_stage]['name']})", icon="✨")
+        st.balloons()
+    else:
+        st.toast(f"+{points} XP", icon="🪙")
 
 
 def unlock(key: str) -> None:
     if key in st.session_state.achievements and not st.session_state.achievements[key]:
         st.session_state.achievements[key] = True
-        st.toast(f"업적 달성: {key} 🏆", icon="🏆")
+        st.toast(f"업적 달성: {key}", icon="🏆")
 
 
-def maybe_drop_reward(event: str) -> None:
-    if event in st.session_state.events_done:
+# Wrapper names to match the snippet you pasted
+def _unlock(key: str) -> None:
+    unlock(key)
+
+
+def _maybe_drop_reward(event: str) -> None:
+    """
+    기존 랜덤 드랍 대신, '행동 기반 XP'로 보상을 지급.
+    (한 이벤트는 1회만 XP 지급)
+    """
+    ss = st.session_state
+    if event in ss.events_done:
         return
-    st.session_state.events_done.add(event)
+    ss.events_done.add(event)
 
-    # drop chance
-    if random.random() > 0.45:
-        return
-
-    # rarity
-    r = random.random()
-    cum = 0.0
-    rarity, icon = "Common", "🟦"
-    for name, prob, ico in RARITY_POOL:
-        cum += prob
-        if r <= cum:
-            rarity, icon = name, ico
-            break
-
-    n, e = random.choice(COLLECTIBLES)
-    reward = {
-        "name": n,
-        "emoji": e,
-        "rarity": rarity,
-        "rarity_icon": icon,
-        "ts": now_str(),
-        "event": event,
+    points_map = {
+        "profile_done": 8,
+        "analysis_done": 8,
+        "digest_done": 10,
+        "trend_done": 8,
+        "plan_done": 12,
+        "chat_done": 2,
+        "secret_phrase_used": 3,
+        "todo_added": 2,
     }
-    st.session_state.rewards.append(reward)
-
-    if rarity == "Secret":
-        st.toast("시크릿 보상이 드랍됐어요… 👀", icon="🟥")
-        st.balloons()
-    else:
-        st.toast(f"{e} {n} ({rarity}) 획득!", icon=icon)
+    award_xp(points_map.get(event, 2), reason=event)
 
 
 def check_combo() -> None:
     done = st.session_state.events_done
     if {"profile_done", "digest_done", "trend_done"}.issubset(done):
-        unlock("triple_action")
+        _unlock("triple_action")
 
 
-# Night owl
+# Night owl achievement
 h = datetime.now().hour
 if h >= 23 or h <= 4:
-    unlock("night_owl")
+    _unlock("night_owl")
 
 
 # =========================================================
@@ -473,12 +521,7 @@ def naver_datalab_trend(
     keyword_groups: List[Dict[str, Any]],
 ) -> pd.DataFrame:
     url = "https://openapi.naver.com/v1/datalab/search"
-    body = {
-        "startDate": start_date,
-        "endDate": end_date,
-        "timeUnit": time_unit,
-        "keywordGroups": keyword_groups,
-    }
+    body = {"startDate": start_date, "endDate": end_date, "timeUnit": time_unit, "keywordGroups": keyword_groups}
     r = requests.post(
         url,
         headers={**naver_headers(client_id, client_secret), "Content-Type": "application/json"},
@@ -514,15 +557,10 @@ def naver_datalab_trend(
 
 
 # =========================================================
-# EXTRACTION (local) - "links → text"
+# EXTRACTION (local)
 # =========================================================
 @st.cache_data(ttl=60 * 60)
 def fetch_and_extract_text(url: str) -> str:
-    """
-    No extra API key version:
-    - fetch HTML
-    - trafilatura extracts main text
-    """
     if not url:
         return ""
     try:
@@ -537,7 +575,7 @@ def fetch_and_extract_text(url: str) -> str:
 
 
 # =========================================================
-# LLM (Korean-first results, English UI allowed)
+# LLM helpers
 # =========================================================
 def openai_client(openai_key: str) -> "OpenAI":
     return OpenAI(api_key=openai_key)
@@ -551,7 +589,6 @@ def try_parse_json(s: str) -> Optional[dict]:
         return json.loads(s)
     except Exception:
         pass
-    # try extract JSON block
     m = re.search(r"\{.*\}", s, re.DOTALL)
     if not m:
         return None
@@ -562,19 +599,13 @@ def try_parse_json(s: str) -> Optional[dict]:
 
 
 def llm_profile_analysis(profile: Dict[str, Any], openai_key: str, model: str) -> Dict[str, Any]:
-    """
-    한국어 결과.
-    """
     client = openai_client(openai_key)
-
     system = (
         "너는 'MajorPass · YONSEI Edition'의 커리어/학업 코치다. "
-        "대상은 연세대학교 학생. "
         "결과는 한국어로 작성하되, 섹션 제목은 짧은 영어를 섞어도 된다. "
         "과장하지 말고 현실적인 액션과 산출물을 중심으로 제안하라. "
         "반드시 JSON만 출력하라(마크다운 금지)."
     )
-
     schema = {
         "summary_ko": "string",
         "strengths": ["string"],
@@ -582,63 +613,29 @@ def llm_profile_analysis(profile: Dict[str, Any], openai_key: str, model: str) -
         "next_focus": ["string"],
         "keyword_suggestions": ["string"],
         "action_plan": [
-            {
-                "priority": "High|Medium|Low",
-                "action": "string",
-                "deliverable": "string",
-                "weeks": 1,
-                "why": "string",
-            }
-        ],
-        "tone_note": "짧게 1문장",
-    }
-
-    user = {
-        "profile": profile,
-        "output_schema": schema,
-        "instructions": [
-            "액션플랜은 6~10개",
-            "deliverable(산출물)을 구체적으로",
-            "연세대 학생 관점(캠퍼스/대외활동/인턴 준비 타이밍)으로 실용적으로",
+            {"priority": "High|Medium|Low", "action": "string", "deliverable": "string", "weeks": 1, "why": "string"}
         ],
     }
-
+    user = {"profile": profile, "output_schema": schema}
     resp = client.chat.completions.create(
         model=model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
-        ],
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": json.dumps(user, ensure_ascii=False)}],
         temperature=0.5,
     )
-    txt = resp.choices[0].message.content or ""
-    parsed = try_parse_json(txt)
+    parsed = try_parse_json(resp.choices[0].message.content or "")
     if not parsed:
-        raise ValueError("JSON 파싱 실패. 모델 출력이 JSON이 아닙니다.")
+        raise ValueError("JSON 파싱 실패")
     return parsed
 
 
-def llm_digest(
-    selected_sources: List[Dict[str, Any]],
-    openai_key: str,
-    model: str,
-) -> Dict[str, Any]:
-    """
-    selected_sources: [{Title, Link, Published, Type, ExtractedText, Snippet}]
-    returns JSON:
-      { digests: [...], overall: {...} }
-    """
+def llm_digest(selected_sources: List[Dict[str, Any]], openai_key: str, model: str) -> Dict[str, Any]:
     client = openai_client(openai_key)
-
     system = (
-        "너는 'Evidence Digest' 작성자다. "
-        "입력으로 들어오는 여러 문서(기사/블로그/웹)의 텍스트를 읽고, "
-        "연세대학교 학생에게 유용한 '요약본'만 제공한다. "
-        "결과는 한국어 중심(영어는 1~2단어 UI 레벨만). "
-        "반드시 JSON만 출력하라(마크다운 금지). "
-        "너무 단정하지 말고, 근거가 약하면 confidence를 낮춰라."
+        "너는 'Evidence Digest' 작성자다. 여러 문서 텍스트를 읽고 "
+        "연세대 학생에게 유용한 요약본만 제공한다. "
+        "결과는 한국어 중심. 반드시 JSON만 출력(마크다운 금지). "
+        "근거가 약하면 confidence를 낮춰라."
     )
-
     schema = {
         "digests": [
             {
@@ -652,14 +649,8 @@ def llm_digest(
                 "confidence": "높음|중간|낮음",
             }
         ],
-        "overall": {
-            "themes": ["string"],
-            "recommended_queries": ["string"],
-            "what_to_do_next": ["string"],
-        },
+        "overall": {"themes": ["string"], "recommended_queries": ["string"], "what_to_do_next": ["string"]},
     }
-
-    # Reduce text to avoid huge tokens
     compact = []
     for s in selected_sources:
         compact.append({
@@ -670,53 +661,27 @@ def llm_digest(
             "snippet": (s.get("Snippet", "") or "")[:400],
             "text": clamp_text(s.get("ExtractedText", "") or "", 3200),
         })
-
-    user = {
-        "sources": compact,
-        "output_schema": schema,
-        "instructions": [
-            "각 문서 요약은 한 줄(one_liner) + highlights(3~5) + takeaways(2~4) + next_actions(2~4)",
-            "overall에는 공통 theme 3~6개, 추천 검색어 5~8개",
-            "링크는 요약 검증용으로만(요약이 메인)",
-        ],
-    }
-
+    user = {"sources": compact, "output_schema": schema}
     resp = client.chat.completions.create(
         model=model,
-        messages=[
-            {"role": "system", "content": system},
-            {"role": "user", "content": json.dumps(user, ensure_ascii=False)},
-        ],
+        messages=[{"role": "system", "content": system}, {"role": "user", "content": json.dumps(user, ensure_ascii=False)}],
         temperature=0.4,
     )
-
-    txt = resp.choices[0].message.content or ""
-    parsed = try_parse_json(txt)
+    parsed = try_parse_json(resp.choices[0].message.content or "")
     if not parsed:
-        raise ValueError("JSON 파싱 실패. 모델 출력이 JSON이 아닙니다.")
+        raise ValueError("JSON 파싱 실패")
     return parsed
 
 
 def llm_trend_interpretation(df: pd.DataFrame, openai_key: str, model: str) -> str:
     client = openai_client(openai_key)
-
     tail = df.tail(30).reset_index().to_dict(orient="records")
-
     system = (
-        "너는 'Trend Pulse' 분석가다. "
-        "시계열 비율 데이터에서 의미 있는 패턴(상승/하락/피크/지속)을 찾아 "
+        "너는 'Trend Pulse' 분석가다. 시계열 비율 데이터에서 패턴을 찾아 "
         "연세대 학생의 다음 액션(수업/프로젝트/검색어/포트폴리오)으로 연결하라. "
         "결과는 한국어로, 짧고 구조적으로."
     )
-    user = {
-        "data": tail,
-        "format": [
-            "요약(2~3줄)",
-            "관찰 포인트 3개",
-            "추천 액션 4개(산출물 포함)",
-            "주의사항 1개(과해석 금지)",
-        ],
-    }
+    user = {"data": tail}
     resp = client.chat.completions.create(
         model=model,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": json.dumps(user, ensure_ascii=False)}],
@@ -727,52 +692,38 @@ def llm_trend_interpretation(df: pd.DataFrame, openai_key: str, model: str) -> s
 
 def llm_plan_builder(context: Dict[str, Any], openai_key: str, model: str) -> Dict[str, Any]:
     client = openai_client(openai_key)
-
     system = (
-        "너는 'Plan Builder'다. "
-        "입력된 프로필/요약본/트렌드/분석을 종합해 '다음 학기 실행 로드맵'을 만든다. "
-        "연세대학교 학생에게 현실적으로 실행 가능한 계획(주차별, 산출물 중심)이어야 한다. "
-        "결과는 한국어 중심. 반드시 JSON만 출력."
+        "너는 'Plan Builder'다. 프로필/요약/트렌드/분석을 종합해 다음 학기 실행 로드맵을 만든다. "
+        "주차별, 산출물 중심. 결과는 한국어 중심. 반드시 JSON만 출력."
     )
-
     schema = {
         "goal": "string",
         "north_star_deliverables": ["string"],
-        "weekly_plan": [
-            {"week": 1, "focus": "string", "deliverable": "string", "tasks": ["string"]}
-        ],
-        "course_activity_suggestions": [
-            {"type": "Course|Project|Club|Contest|Intern", "suggestion": "string", "why": "string"}
-        ],
+        "weekly_plan": [{"week": 1, "focus": "string", "deliverable": "string", "tasks": ["string"]}],
         "risk_controls": ["string"],
         "checklist": ["string"],
     }
-
     payload = {"context": context, "output_schema": schema}
-
     resp = client.chat.completions.create(
         model=model,
         messages=[{"role": "system", "content": system}, {"role": "user", "content": json.dumps(payload, ensure_ascii=False)}],
         temperature=0.45,
     )
-    txt = resp.choices[0].message.content or ""
-    parsed = try_parse_json(txt)
+    parsed = try_parse_json(resp.choices[0].message.content or "")
     if not parsed:
-        raise ValueError("JSON 파싱 실패. 모델 출력이 JSON이 아닙니다.")
+        raise ValueError("JSON 파싱 실패")
     return parsed
 
 
-def llm_chat(user_message: str, history: List[Dict[str, str]], context: Dict[str, Any], openai_key: str, model: str) -> str:
+# (2) Chat snippet expects this signature:
+def llm_chat(*, openai_key: str, model: str, history: List[Dict[str, str]], context: Dict[str, Any], user_message: str) -> str:
     client = openai_client(openai_key)
-
     system = (
         "너는 'MajorPass · YONSEI Edition'의 대화 코치다. "
         "사용자의 상황에 맞춰 실전적으로 답하고, 결과는 한국어 중심으로 제공한다. "
-        "가능하면 '다음 행동(액션)'을 체크리스트로 마무리하라. "
-        "불필요하게 길게 쓰지 말고, 구조적(소제목/불릿)으로."
+        "가능하면 마지막에 '다음 행동' 체크리스트로 마무리하라. "
+        "불필요하게 길게 쓰지 말고 구조적으로."
     )
-
-    # light context
     ctx = {
         "profile": context.get("profile"),
         "analysis": context.get("analysis"),
@@ -780,21 +731,12 @@ def llm_chat(user_message: str, history: List[Dict[str, str]], context: Dict[str
         "trend_summary": context.get("trend"),
         "plan": context.get("plan"),
     }
-
     messages = [{"role": "system", "content": system}]
     messages.append({"role": "user", "content": f"컨텍스트(JSON): {json.dumps(ctx, ensure_ascii=False)}"})
-
-    # last 8 turns
     for m in history[-8:]:
         messages.append({"role": m["role"], "content": m["content"]})
-
     messages.append({"role": "user", "content": user_message})
-
-    resp = client.chat.completions.create(
-        model=model,
-        messages=messages,
-        temperature=0.6,
-    )
+    resp = client.chat.completions.create(model=model, messages=messages, temperature=0.6)
     return resp.choices[0].message.content or ""
 
 
@@ -803,7 +745,7 @@ def llm_chat(user_message: str, history: List[Dict[str, str]], context: Dict[str
 # =========================================================
 with st.sidebar:
     st.markdown("## 🦅 MajorPass")
-    st.caption("YONSEI Edition · Korean-first results")
+    st.caption("YONSEI Edition · Navy mode")
 
     st.markdown("### 🔐 Keys")
     openai_key = st.text_input("OpenAI API Key", value=safe_secret("OPENAI_API_KEY"), type="password")
@@ -819,15 +761,16 @@ with st.sidebar:
 
     st.markdown("---")
 
+    # (2) + (3) add pages: Chat + Growth Rewards
     nav = st.radio(
         "Navigation",
-        ["Profile", "Evidence Digest", "Trend Pulse", "Plan Builder", "Chat Coach", "Rewards"],
-        index=["Profile", "Evidence Digest", "Trend Pulse", "Plan Builder", "Chat Coach", "Rewards"].index(st.session_state.nav),
+        ["Profile", "Evidence Digest", "Trend Pulse", "Plan Builder", "Chat", "Growth Rewards"],
+        index=["Profile", "Evidence Digest", "Trend Pulse", "Plan Builder", "Chat", "Growth Rewards"].index(st.session_state.nav),
     )
     st.session_state.nav = nav
 
     st.markdown("---")
-    st.caption("※ 학교 로고 사용은 규정/허용 범위 확인 권장\n(본 앱은 추상 독수리 아이콘을 기본 제공)")
+    st.caption("※ 공식 로고 사용은 규정 확인 권장(기본은 추상 독수리)")
 
 
 # =========================================================
@@ -843,14 +786,15 @@ st.markdown(
     <div class="mp-eagle">
       <div class="mp-eagle-badge">{eagle_svg()}</div>
       <div>
-        <div class="mp-title">MajorPass <span style="color:{YONSEI_BLUE};">· YONSEI</span></div>
-        <div class="mp-sub">전공을 커리어 자산으로 정리하는 <b>요약 중심</b> 코치 · <span style="color:{YONSEI_BLUE};font-weight:700;">Evidence → Plan → Action</span></div>
+        <div class="mp-title">MajorPass <span style="color:#93C5FD;">· YONSEI</span></div>
+        <div class="mp-sub">전공을 커리어 자산으로 정리하는 <b>요약 중심</b> 코치 · Evidence → Plan → Action</div>
       </div>
     </div>
     <div class="mp-badges">
       <span class="mp-pill">🕒 {now_str()}</span>
       <span class="mp-pill">{'✅ LLM ON' if llm_ready else '⚪ LLM OFF'}</span>
       <span class="mp-pill">{'✅ NAVER ON' if naver_ready else '⚪ NAVER OFF'}</span>
+      <span class="mp-pill">🪙 XP {st.session_state.xp}</span>
     </div>
   </div>
 </div>
@@ -860,22 +804,18 @@ st.markdown(
 
 
 # =========================================================
-# PAGE: PROFILE
+# PAGES (keep existing as much as possible)
 # =========================================================
 def page_profile() -> None:
     st.markdown("<div class='mp-section'>Profile</div>", unsafe_allow_html=True)
-    st.caption("UI는 영어로 깔끔하게, 결과는 한국어로 명확하게. (원하면 Chat에서 더 다듬을 수 있어요)")
+    st.caption("UI는 영어로 깔끔하게, 결과는 한국어로 명확하게.")
 
     with st.form("profile_form", border=False):
         c1, c2, c3 = st.columns([1.2, 1.0, 1.0])
 
         with c1:
             major = st.text_input("Major", value=st.session_state.profile.get("major", ""), placeholder="예: 경영학과 / 컴퓨터과학과")
-            semester = st.selectbox(
-                "Semester",
-                options=[f"{y}학년 {s}학기" for y in range(1, 5) for s in (1, 2)],
-                index=0,
-            )
+            semester = st.selectbox("Semester", options=[f"{y}학년 {s}학기" for y in range(1, 5) for s in (1, 2)], index=0)
             plan = st.selectbox("Plan", ["본전공 유지", "복수전공 희망", "전과 희망"], index=0)
 
         with c2:
@@ -911,12 +851,10 @@ def page_profile() -> None:
             "interest": interest,
         }
 
-        unlock("first_profile")
-        maybe_drop_reward("profile_done")
-
+        _unlock("first_profile")
+        _maybe_drop_reward("profile_done")
         st.session_state.chat_context["profile"] = st.session_state.profile
 
-        # LLM analysis
         if llm_ready:
             with st.spinner("한국어 전략을 생성 중…"):
                 try:
@@ -935,7 +873,6 @@ def page_profile() -> None:
         else:
             st.info("좌측 사이드바에 OpenAI Key를 넣으면 ‘맞춤 전략(한국어)’이 생성됩니다.")
 
-    # Display dashboard
     if st.session_state.profile:
         p = st.session_state.profile
         total_done = p["major_credit"] + p["liberal_credit"]
@@ -953,23 +890,18 @@ def page_profile() -> None:
 
         c1, c2 = st.columns([1.15, 0.85])
         with c1:
-            st.markdown("<div class='mp-card'><div class='mp-section'>Dashboard</div><div class='mp-muted'>학점 진행 상황을 한눈에.</div></div>", unsafe_allow_html=True)
+            st.markdown("<div class='mp-card'><div class='mp-section'>Dashboard</div><div style='color:var(--muted)'>학점 진행 상황</div></div>", unsafe_allow_html=True)
             chart_df = pd.DataFrame(
-                {
-                    "Category": ["Total", "Major", "Liberal"],
-                    "Completed": [total_done, p["major_credit"], p["liberal_credit"]],
-                    "Remaining": [total_remaining, major_remaining, lib_remaining],
-                }
+                {"Category": ["Total", "Major", "Liberal"],
+                 "Completed": [total_done, p["major_credit"], p["liberal_credit"]],
+                 "Remaining": [total_remaining, major_remaining, lib_remaining]}
             ).set_index("Category")
             st.bar_chart(chart_df)
 
         with c2:
-            st.markdown("<div class='mp-card'><div class='mp-section'>Keyword Seeds</div><div class='mp-muted'>Evidence Digest / Trend에서 바로 쓰세요.</div></div>", unsafe_allow_html=True)
+            st.markdown("<div class='mp-card'><div class='mp-section'>Keyword Seeds</div><div style='color:var(--muted)'>Digest/Trend에서 사용</div></div>", unsafe_allow_html=True)
             kws = st.session_state.recommended_keywords or []
-            if kws:
-                st.write(" • ".join(kws))
-            else:
-                st.write("- 아직 추천 키워드가 없어요. Generate 후 자동 생성됩니다.")
+            st.write(" • ".join(kws) if kws else "- 아직 추천 키워드가 없어요.")
 
         st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
 
@@ -979,20 +911,17 @@ def page_profile() -> None:
             if st.session_state.profile_analysis:
                 a = st.session_state.profile_analysis
                 st.write(a.get("summary_ko", ""))
-
                 st.markdown("**Strengths**")
                 st.write("\n".join([f"- {x}" for x in a.get("strengths", [])]) or "- (없음)")
-
                 st.markdown("**Risks**")
                 st.write("\n".join([f"- {x}" for x in a.get("risks", [])]) or "- (없음)")
-
                 st.markdown("**Next Focus**")
                 st.write("\n".join([f"- {x}" for x in a.get("next_focus", [])]) or "- (없음)")
             else:
-                st.info("아직 분석 결과가 없어요. 상단에서 Generate를 눌러주세요.")
+                st.info("아직 분석 결과가 없어요. Generate를 눌러주세요.")
 
         with right:
-            st.markdown("<div class='mp-card-solid'><div class='mp-section'>Action Plan</div><div class='mp-muted'>산출물 중심으로 설계됨</div></div>", unsafe_allow_html=True)
+            st.markdown("<div class='mp-card-solid'><div class='mp-section'>Action Plan</div><div style='color:var(--muted)'>산출물 중심</div></div>", unsafe_allow_html=True)
             df = st.session_state.action_plan_df
             if df is None or (isinstance(df, pd.DataFrame) and df.empty):
                 fallback = pd.DataFrame([
@@ -1011,12 +940,9 @@ def page_profile() -> None:
             )
 
 
-# =========================================================
-# PAGE: EVIDENCE DIGEST
-# =========================================================
 def page_digest() -> None:
     st.markdown("<div class='mp-section'>Evidence Digest</div>", unsafe_allow_html=True)
-    st.caption("링크를 나열하는 대신, **요약본(정리본)**만 보여주는 모드입니다. (원문 링크는 검증용으로 최소화)")
+    st.caption("링크 나열 대신, 요약본(정리본)을 보여줍니다.")
 
     if not naver_ready:
         st.warning("좌측에서 NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 을 입력하면 사용 가능합니다.")
@@ -1038,10 +964,8 @@ def page_digest() -> None:
     with q4:
         display = st.slider("Results", 5, 30, 10, 5)
 
-    run_search = st.button("Search", use_container_width=True)
-
-    if run_search:
-        with st.spinner("Naver에서 검색 결과를 가져오는 중…"):
+    if st.button("Search", use_container_width=True):
+        with st.spinner("Naver 검색 중…"):
             try:
                 df = naver_search(query=query, client_id=naver_id, client_secret=naver_secret, category=category, display=display, sort=sort)
                 st.session_state.search_df = df
@@ -1050,10 +974,10 @@ def page_digest() -> None:
 
     df = st.session_state.search_df
     if df is None or (isinstance(df, pd.DataFrame) and df.empty):
-        st.info("검색 후, 요약하고 싶은 문서를 선택(Select)하고 Digest를 실행하세요.")
+        st.info("검색 후, 요약할 문서를 Select로 체크하고 Digest를 실행하세요.")
         return
 
-    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Select sources</div><div class='mp-muted'>최대 3~6개 추천(비용/속도 고려)</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Select sources</div><div style='color:var(--muted)'>최대 3~6개 추천</div></div>", unsafe_allow_html=True)
 
     edited = st.data_editor(
         df,
@@ -1072,14 +996,12 @@ def page_digest() -> None:
         st.warning("Select 체크를 해주세요.")
         return
 
-    digest_btn = st.button("Digest selected", use_container_width=True)
-
-    if digest_btn:
+    if st.button("Digest selected", use_container_width=True):
         if not llm_ready:
-            st.warning("요약본 생성은 LLM(OpenAI Key)이 필요합니다. 좌측 사이드바에 키를 입력해주세요.")
+            st.warning("요약본 생성은 LLM(OpenAI Key)이 필요합니다.")
             return
 
-        with st.spinner("원문을 추출하고 요약본을 생성 중…"):
+        with st.spinner("본문 추출 + 요약 생성 중…"):
             sources = []
             for _, row in selected.iterrows():
                 url = row.get("Link", "")
@@ -1090,20 +1012,15 @@ def page_digest() -> None:
                     "Published": row.get("Published", ""),
                     "Type": row.get("Type", ""),
                     "Snippet": row.get("Snippet", ""),
-                    "ExtractedText": text,
+                    "ExtractedText": text or row.get("Snippet", ""),
                 })
-
-            # If extraction fails, still allow snippet-based digest
-            for s in sources:
-                if not s["ExtractedText"]:
-                    s["ExtractedText"] = s["Snippet"]
 
             try:
                 digest = llm_digest(sources, openai_key=openai_key, model=model)
                 st.session_state.digest_result = digest
 
-                unlock("first_digest")
-                maybe_drop_reward("digest_done")
+                _unlock("first_digest")
+                _maybe_drop_reward("digest_done")
                 check_combo()
 
                 st.session_state.chat_context["digest"] = digest
@@ -1115,19 +1032,17 @@ def page_digest() -> None:
     if not digest:
         return
 
-    # Overall
     overall = digest.get("overall", {})
     st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='mp-card'><div class='mp-section'>Overall</div></div>", unsafe_allow_html=True)
     if overall:
         st.markdown("**Themes**")
-        st.write("\n".join([f"- {t}" for t in overall.get("themes", [])]) or "- (없음)")
+        st.write("\n".join([f"- {t}" for t in overall.get("themes", [])]) or "-")
         st.markdown("**Recommended Queries**")
-        st.write(" • ".join(overall.get("recommended_queries", [])) or "- (없음)")
+        st.write(" • ".join(overall.get("recommended_queries", [])) or "-")
         st.markdown("**What to do next**")
-        st.write("\n".join([f"- {x}" for x in overall.get("what_to_do_next", [])]) or "- (없음)")
+        st.write("\n".join([f"- {x}" for x in overall.get("what_to_do_next", [])]) or "-")
 
-    # Per-doc cards
     st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='mp-section'>Digest Cards</div>", unsafe_allow_html=True)
 
@@ -1137,7 +1052,6 @@ def page_digest() -> None:
         one = d.get("one_liner", "")
         conf = d.get("confidence", "중간")
         keywords = d.get("keywords", [])[:6]
-
         tags_html = "".join([f"<span class='d-tag'>{clean_html(k)}</span>" for k in keywords])
 
         st.markdown(
@@ -1168,17 +1082,14 @@ def page_digest() -> None:
             if url:
                 st.link_button("원문 보기 (검증용)", url, use_container_width=True)
 
-        if show_extracted_text:
+        if show_extracted_text and url:
             with st.expander("추출 본문(디버그)", expanded=False):
                 st.write(clamp_text(fetch_and_extract_text(url), 5000))
 
 
-# =========================================================
-# PAGE: TREND PULSE
-# =========================================================
 def page_trend() -> None:
     st.markdown("<div class='mp-section'>Trend Pulse</div>", unsafe_allow_html=True)
-    st.caption("관심 키워드의 흐름을 보고, ‘지금 무엇을 쌓을지’를 결정합니다.")
+    st.caption("관심 키워드 흐름을 보고, 지금 무엇을 쌓을지 결정합니다.")
 
     if not naver_ready:
         st.warning("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 이 필요합니다.")
@@ -1204,9 +1115,7 @@ def page_trend() -> None:
         with cols[i]:
             keys.append(st.text_input(f"K{i+1}", value=default_kw, placeholder="예: UX"))
 
-    run = st.button("Generate", use_container_width=True)
-
-    if run:
+    if st.button("Generate", use_container_width=True):
         groups = []
         for kw in keys:
             kw = (kw or "").strip()
@@ -1227,8 +1136,8 @@ def page_trend() -> None:
                     keyword_groups=groups,
                 )
                 st.session_state.trend_df = df
-                unlock("first_trend")
-                maybe_drop_reward("trend_done")
+                _unlock("first_trend")
+                _maybe_drop_reward("trend_done")
                 check_combo()
             except Exception as e:
                 st.error(f"Trend 오류: {e}")
@@ -1239,18 +1148,17 @@ def page_trend() -> None:
         st.info("Generate를 눌러 그래프를 생성하세요.")
         return
 
-    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Chart</div><div class='mp-muted'>절대 검색량이 아니라 ‘상대적 신호’입니다.</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Chart</div><div style='color:var(--muted)'>상대적 신호</div></div>", unsafe_allow_html=True)
     st.line_chart(df)
 
-    if llm_ready:
-        if st.button("Interpret", use_container_width=True):
-            with st.spinner("트렌드 해석 생성 중…"):
-                try:
-                    summary = llm_trend_interpretation(df, openai_key, model)
-                    st.session_state.trend_summary = summary
-                    st.session_state.chat_context["trend"] = summary
-                except Exception as e:
-                    st.error(f"해석 오류: {e}")
+    if llm_ready and st.button("Interpret", use_container_width=True):
+        with st.spinner("트렌드 해석 생성 중…"):
+            try:
+                summary = llm_trend_interpretation(df, openai_key, model)
+                st.session_state.trend_summary = summary
+                st.session_state.chat_context["trend"] = summary
+            except Exception as e:
+                st.error(f"해석 오류: {e}")
 
     if st.session_state.trend_summary:
         st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
@@ -1258,17 +1166,13 @@ def page_trend() -> None:
         st.write(st.session_state.trend_summary)
 
 
-# =========================================================
-# PAGE: PLAN BUILDER
-# =========================================================
 def page_plan() -> None:
     st.markdown("<div class='mp-section'>Plan Builder</div>", unsafe_allow_html=True)
-    st.caption("Profile + Evidence Digest + Trend를 합쳐 다음 학기 실행 로드맵을 만듭니다.")
+    st.caption("Profile + Digest + Trend를 합쳐 다음 학기 실행 로드맵을 만듭니다.")
 
     if not st.session_state.profile:
         st.warning("먼저 Profile에서 정보를 입력하고 Generate를 해주세요.")
         return
-
     if not llm_ready:
         st.warning("Plan 생성은 LLM(OpenAI Key)이 필요합니다.")
         return
@@ -1280,21 +1184,20 @@ def page_plan() -> None:
         "trend_summary": st.session_state.trend_summary,
     }
 
-    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Inputs</div><div class='mp-muted'>현재 세션에 저장된 정보로 계획을 만듭니다.</div></div>", unsafe_allow_html=True)
+    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Inputs</div><div style='color:var(--muted)'>현재 세션 데이터로 계획 생성</div></div>", unsafe_allow_html=True)
+
     c1, c2, c3 = st.columns(3)
     c1.metric("Profile", "✅" if st.session_state.profile else "⚪")
     c2.metric("Digest", "✅" if st.session_state.digest_result else "⚪")
     c3.metric("Trend", "✅" if st.session_state.trend_df is not None else "⚪")
 
-    gen = st.button("Build Plan", use_container_width=True)
-
-    if gen:
-        with st.spinner("다음 학기 로드맵 생성 중…"):
+    if st.button("Build Plan", use_container_width=True):
+        with st.spinner("로드맵 생성 중…"):
             try:
                 plan = llm_plan_builder(context, openai_key, model)
                 st.session_state.plan_result = plan
-                unlock("first_plan")
-                maybe_drop_reward("plan_done")
+                _unlock("first_plan")
+                _maybe_drop_reward("plan_done")
                 st.session_state.chat_context["plan"] = plan
             except Exception as e:
                 st.error(f"Plan 생성 오류: {e}")
@@ -1311,12 +1214,11 @@ def page_plan() -> None:
     st.markdown("**North Star Deliverables**")
     st.write("\n".join([f"- {x}" for x in plan.get("north_star_deliverables", [])]) or "-")
 
-    # Weekly plan table
     weekly = plan.get("weekly_plan", [])
     if weekly:
         df = pd.DataFrame(weekly)
         st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
-        st.markdown("<div class='mp-card-solid'><div class='mp-section'>Weekly Plan</div><div class='mp-muted'>주차별 초점과 산출물</div></div>", unsafe_allow_html=True)
+        st.markdown("<div class='mp-card-solid'><div class='mp-section'>Weekly Plan</div><div style='color:var(--muted)'>주차별 초점/산출물</div></div>", unsafe_allow_html=True)
         st.dataframe(df, use_container_width=True, hide_index=True)
         st.download_button(
             "Download Weekly Plan CSV",
@@ -1326,124 +1228,238 @@ def page_plan() -> None:
             use_container_width=True,
         )
 
-    # Suggestions
-    sug = plan.get("course_activity_suggestions", [])
-    if sug:
-        st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
-        st.markdown("<div class='mp-card-solid'><div class='mp-section'>Suggestions</div></div>", unsafe_allow_html=True)
-        st.dataframe(pd.DataFrame(sug), use_container_width=True, hide_index=True)
-
     st.markdown("**Risk controls**")
     st.write("\n".join([f"- {x}" for x in plan.get("risk_controls", [])]) or "-")
-
     st.markdown("**Checklist**")
     st.write("\n".join([f"- {x}" for x in plan.get("checklist", [])]) or "-")
 
 
 # =========================================================
-# PAGE: CHAT COACH
+# (2) PAGE: CHAT — paste-style behavior (TAB 4 logic)
 # =========================================================
 def page_chat() -> None:
-    st.markdown("<div class='mp-section'>Chat Coach</div>", unsafe_allow_html=True)
-    st.caption("버튼으로 원하는 답변 형태를 고르고, 결과는 한국어로 받는 코치 모드입니다.")
+    st.markdown("<div class='mp-section'>Chat</div>", unsafe_allow_html=True)
+    st.caption("Ask follow-ups. Your profile, strategy, evidence summary, and trend summary can be used as context.")
 
-    # render history
+    SECRET_PHRASE = "path to pass"
+
+    # Render history
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
 
-    # quick actions
-    q1, q2, q3, q4 = st.columns(4)
-    if q1.button("4-week Plan", use_container_width=True):
-        st.session_state.pending_user_message = "내 상황을 바탕으로 4주 실행계획을 만들어줘. 산출물 중심으로."
-    if q2.button("Priorities", use_container_width=True):
-        st.session_state.pending_user_message = "다음 학기 우선순위 5개를 정해줘. 각 우선순위마다 왜 중요한지 근거도 써줘."
-    if q3.button("Digest → Actions", use_container_width=True):
-        st.session_state.pending_user_message = "Evidence Digest 요약을 바탕으로 당장 할 수 있는 액션 6개로 바꿔줘. 산출물 포함."
-    if q4.button("Portfolio Outline", use_container_width=True):
-        st.session_state.pending_user_message = "내 관심사에 맞는 포트폴리오 목차를 설계해줘. 섹션별 예시 산출물도."
+    quick1, quick2, quick3, quick4 = st.columns(4)
+    if quick1.button("🧩 Build a 4-week plan", use_container_width=True):
+        st.session_state.chat_history.append({"role": "user", "content": "Build a 4-week plan from my current situation. Make it deliverable-driven."})
+    if quick2.button("📌 Prioritize next semester", use_container_width=True):
+        st.session_state.chat_history.append({"role": "user", "content": "What should I prioritize next semester? Give 5 priorities and what evidence supports them."})
+    if quick3.button("🔎 Turn evidence into actions", use_container_width=True):
+        st.session_state.chat_history.append({"role": "user", "content": "Turn my evidence summary into 6 concrete actions and deliverables."})
+    if quick4.button("🧠 Portfolio structure", use_container_width=True):
+        st.session_state.chat_history.append({"role": "user", "content": "Design a portfolio structure that matches my interests. Give sections and example artifacts."})
 
-    user_input = st.chat_input("메시지를 입력하세요… (한국어 추천)")
+    user_input = st.chat_input("Ask anything… (English recommended, but any language is okay)")
+
     if user_input:
-        st.session_state.pending_user_message = user_input
+        st.session_state.chat_history.append({"role": "user", "content": user_input})
 
-    if st.session_state.pending_user_message:
-        msg = st.session_state.pending_user_message
-        st.session_state.pending_user_message = None
+    # Process if last message is user and not yet answered
+    if st.session_state.chat_history and st.session_state.chat_history[-1]["role"] == "user":
+        last_user = st.session_state.chat_history[-1]["content"]
 
-        # secret phrase
-        if SECRET_PHRASE in msg.lower():
-            unlock("secret_phrase")
-            maybe_drop_reward("secret_phrase")
+        if SECRET_PHRASE in last_user.lower():
+            _unlock("secret_phrase")
+            _maybe_drop_reward("secret_phrase_used")
 
-        st.session_state.chat_history.append({"role": "user", "content": msg})
-        with st.chat_message("user"):
-            st.markdown(msg)
-
-        # chat count
-        user_msgs = [x for x in st.session_state.chat_history if x["role"] == "user"]
+        user_msgs = [m for m in st.session_state.chat_history if m["role"] == "user"]
         if len(user_msgs) >= 5:
-            unlock("chat_5")
+            _unlock("chat_5")
 
-        if not llm_ready:
+        if llm_ready:
             with st.chat_message("assistant"):
-                st.info("Chat은 OpenAI Key가 필요합니다. 좌측 사이드바에 입력해주세요.")
-            return
-
-        with st.chat_message("assistant"):
-            with st.spinner("생각 중…"):
-                try:
-                    answer = llm_chat(
-                        user_message=msg,
-                        history=st.session_state.chat_history[:-1],
-                        context=st.session_state.chat_context,
-                        openai_key=openai_key,
-                        model=model,
-                    )
-                    st.markdown(answer)
-                    st.session_state.chat_history.append({"role": "assistant", "content": answer})
-                    maybe_drop_reward("chat_done")
-                except Exception as e:
-                    st.error(f"Chat 오류: {e}")
+                with st.spinner("Thinking…"):
+                    try:
+                        answer = llm_chat(
+                            openai_key=openai_key,
+                            model=model,
+                            history=st.session_state.chat_history[:-1],
+                            context=st.session_state.chat_context,
+                            user_message=last_user,
+                        )
+                        st.markdown(answer)
+                        st.session_state.chat_history.append({"role": "assistant", "content": answer})
+                        _maybe_drop_reward("chat_done")
+                    except Exception as e:
+                        st.error(f"Chat error: {e}")
+        else:
+            with st.chat_message("assistant"):
+                st.info(
+                    "Add an OpenAI API key in the sidebar to enable chat.\n\n"
+                    "Meanwhile, try these tabs:\n"
+                    "- Evidence Digest for summarized sources\n"
+                    "- Trend Pulse for time-series signals\n"
+                )
 
 
 # =========================================================
-# PAGE: REWARDS
+# (3) PAGE: GROWTH REWARDS — To-do based progress
 # =========================================================
-def page_rewards() -> None:
-    st.markdown("<div class='mp-section'>Rewards</div>", unsafe_allow_html=True)
-    st.caption("귀엽지만 유치하지 않게: 깃털/횃불/책/시크릿 배지로 ‘실행’을 유도합니다.")
+def _seed_todos_if_needed() -> None:
+    """
+    Seed roadmap todos once:
+    - prefer profile action_plan_df
+    - else use plan_result weekly_plan deliverables
+    """
+    ss = st.session_state
+    if ss.todos_seeded and ss.roadmap_todos:
+        return
+    if ss.roadmap_todos:
+        ss.todos_seeded = True
+        return
 
-    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Achievements</div><div class='mp-muted'>일부는 숨겨져 있어요.</div></div>", unsafe_allow_html=True)
+    todos = []
+    tid = 1
 
-    ach = st.session_state.achievements
-    rows = []
-    for k, v in ach.items():
-        rows.append({"업적": k, "상태": "✅" if v else "🔒"})
-    st.dataframe(pd.DataFrame(rows), use_container_width=True, hide_index=True)
+    # 1) from action plan table
+    df = ss.action_plan_df
+    if isinstance(df, pd.DataFrame) and not df.empty:
+        for _, r in df.head(10).iterrows():
+            action = str(r.get("액션", r.get("action", ""))).strip()
+            deliverable = str(r.get("산출물", r.get("deliverable", ""))).strip()
+            pr = str(r.get("우선순위", r.get("priority", "Medium"))).strip().lower()
+            points = 14 if "high" in pr else (10 if "medium" in pr else 8)
+            task = action if action else "로드맵 액션"
+            if deliverable and deliverable != "nan":
+                task = f"{task} → 산출물: {deliverable}"
+            todos.append({"id": tid, "task": task, "done": False, "points": points, "source": "Action Plan"})
+            tid += 1
+
+    # 2) from plan weekly plan
+    if not todos and isinstance(ss.plan_result, dict):
+        weekly = ss.plan_result.get("weekly_plan", []) or []
+        for w in weekly[:10]:
+            deliverable = str(w.get("deliverable", "")).strip()
+            focus = str(w.get("focus", "")).strip()
+            task = f"Week {w.get('week', '')}: {focus} → {deliverable}".strip()
+            todos.append({"id": tid, "task": task, "done": False, "points": 10, "source": "Weekly Plan"})
+            tid += 1
+
+    # fallback
+    if not todos:
+        base = [
+            ("타겟 직무 1개를 정리하기 → 1p 브리프", 12),
+            ("Evidence Digest 2건 만들기", 10),
+            ("트렌드 키워드 2개 비교하고 결론 5줄 쓰기", 10),
+            ("포트폴리오 산출물 1개 초안 만들기", 14),
+        ]
+        for t, p in base:
+            todos.append({"id": tid, "task": t, "done": False, "points": p, "source": "Starter"})
+            tid += 1
+
+    ss.roadmap_todos = todos
+    ss.todos_seeded = True
+
+
+def page_growth_rewards() -> None:
+    st.markdown("<div class='mp-section'>Growth Rewards</div>", unsafe_allow_html=True)
+    st.caption("로드맵을 ‘실천’하면 캐릭터가 성장합니다. 체크/추가 같은 행동이 XP로 누적돼요.")
+
+    _seed_todos_if_needed()
+
+    ss = st.session_state
+    xp = ss.xp
+    stage_idx = _current_stage_from_xp(xp)
+    ss.growth_stage = stage_idx
+
+    stage = GROWTH_STAGES[stage_idx]
+    next_min = GROWTH_STAGES[min(stage_idx + 1, len(GROWTH_STAGES) - 1)]["min_xp"]
+    prev_min = stage["min_xp"]
+    denom = max(1, next_min - prev_min) if stage_idx < len(GROWTH_STAGES) - 1 else 1
+    prog = 1.0 if stage_idx == len(GROWTH_STAGES) - 1 else (xp - prev_min) / denom
+
+    # Character card
+    st.markdown(
+        f"""
+<div class="mp-card-solid" style="display:flex; align-items:center; justify-content:space-between; gap:14px;">
+  <div>
+    <div style="font-size:1.05rem; font-weight:800;">My Little Pass</div>
+    <div style="color:var(--muted); margin-top:6px;">{stage['desc']}</div>
+    <div style="margin-top:10px; color:var(--muted);">Stage: <b>{stage['name']}</b> · XP: <b>{xp}</b></div>
+  </div>
+  <div style="font-size:3.2rem; line-height:1;">{stage['emoji']}</div>
+</div>
+""",
+        unsafe_allow_html=True,
+    )
+    st.progress(float(prog))
 
     st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Collectibles</div><div class='mp-muted'>행동할 때 랜덤 드랍</div></div>", unsafe_allow_html=True)
-    if not st.session_state.rewards:
-        st.info("아직 보상이 없어요. Profile/Digest/Trend/Plan/Chat을 사용해보세요.")
-        return
+    # To-do list
+    st.markdown("<div class='mp-card'><div class='mp-section'>Roadmap To‑Do</div><div style='color:var(--muted)'>체크하면 XP가 올라가고 성장합니다</div></div>", unsafe_allow_html=True)
 
-    for r in reversed(st.session_state.rewards[-25:]):
-        st.markdown(
-            f"""
-<div class="d-card" style="margin-bottom:10px;">
-  <div class="d-head">
-    <div>
-      <div class="d-title">{r['emoji']} {r['name']} <span style="color:rgba(11,18,32,0.55);font-weight:700;">({r['rarity']})</span></div>
-      <div class="d-one">{r['rarity_icon']} {r['event']} · {r['ts']}</div>
-    </div>
-    <div class="d-meta">{r['rarity_icon']}</div>
-  </div>
-</div>
-""",
-            unsafe_allow_html=True,
-        )
+    before = {t["id"]: bool(t["done"]) for t in ss.roadmap_todos}
+    df = pd.DataFrame(ss.roadmap_todos)
+
+    edited = st.data_editor(
+        df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "done": st.column_config.CheckboxColumn("Done"),
+            "task": st.column_config.TextColumn("Task", width="large"),
+            "points": st.column_config.NumberColumn("XP", width="small"),
+            "source": st.column_config.TextColumn("Source", width="small"),
+        },
+        disabled=["id", "task", "points", "source"],
+    )
+
+    # Detect newly completed tasks
+    after = {int(r["id"]): bool(r["done"]) for _, r in edited.iterrows()}
+    newly_done_ids = [tid for tid in after.keys() if after[tid] and not before.get(tid, False)]
+
+    # Save back to session
+    ss.roadmap_todos = edited.to_dict(orient="records")
+
+    # Award XP for newly completed tasks
+    for tid in newly_done_ids:
+        row = edited[edited["id"] == tid].iloc[0]
+        award_xp(int(row["points"]), reason=f"todo_completed:{tid}")
+
+    # Add custom task
+    st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='mp-section'>Add your own task</div>", unsafe_allow_html=True)
+
+    a1, a2, a3 = st.columns([1.6, 0.6, 0.6])
+    with a1:
+        new_task = st.text_input("New task", placeholder="예: 이번 주 안에 포트폴리오 케이스 스터디 1개 초안 작성")
+    with a2:
+        new_points = st.selectbox("XP", [6, 8, 10, 12, 14], index=2)
+    with a3:
+        add = st.button("Add", use_container_width=True)
+
+    if add and new_task.strip():
+        next_id = int(max([t["id"] for t in ss.roadmap_todos], default=0) + 1)
+        ss.roadmap_todos.append({"id": next_id, "task": new_task.strip(), "done": False, "points": int(new_points), "source": "My plan"})
+        _maybe_drop_reward("todo_added")
+
+    # Completion bonus
+    all_done = all(bool(t["done"]) for t in ss.roadmap_todos) if ss.roadmap_todos else False
+    if all_done:
+        st.success("🎉 로드맵 To‑Do를 전부 완료했어요! (완성 엔딩)")
+        # one-time big bonus
+        if "roadmap_complete_bonus" not in ss.events_done:
+            ss.events_done.add("roadmap_complete_bonus")
+            award_xp(25, "roadmap_complete_bonus")
+
+    # Log
+    st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
+    st.markdown("<div class='mp-card-solid'><div class='mp-section'>Reward Log</div><div style='color:var(--muted)'>최근 행동 기록</div></div>", unsafe_allow_html=True)
+    if ss.growth_log:
+        log_df = pd.DataFrame(ss.growth_log[-20:])[["ts", "reason", "points"]].iloc[::-1]
+        st.dataframe(log_df, use_container_width=True, hide_index=True)
+    else:
+        st.info("아직 로그가 없어요. To‑Do를 체크하거나 계획을 추가해보세요.")
 
 
 # =========================================================
@@ -1457,7 +1473,7 @@ elif st.session_state.nav == "Trend Pulse":
     page_trend()
 elif st.session_state.nav == "Plan Builder":
     page_plan()
-elif st.session_state.nav == "Chat Coach":
+elif st.session_state.nav == "Chat":
     page_chat()
-elif st.session_state.nav == "Rewards":
-    page_rewards()
+elif st.session_state.nav == "Growth Rewards":
+    page_growth_rewards()
