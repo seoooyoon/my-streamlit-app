@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 import pandas as pd
 import requests
 import streamlit as st
+import streamlit.components.v1 as components
 
 import trafilatura  # 본문 추출 (키 필요 없음)
 
@@ -48,60 +49,60 @@ def eagle_svg(color: str = YONSEI_BLUE) -> str:
 
 
 # =========================================================
-# SVG: Growth character (baby -> pro) — simple original illustrations
+# SVG: Growth character (baby -> pro) — improved contrast + responsive
 # =========================================================
 def character_svg(stage: int) -> str:
     """
     stage: 0..4
-    Cute minimal character drawn in SVG (original).
+    Rendered via components.html for reliability.
     """
     stage = max(0, min(int(stage), 4))
 
-    # Palettes per stage
     palettes = [
-        {"accent": "#93C5FD", "shirt": "#E0F2FE", "pants": "#CBD5E1", "hair": "#334155", "bg": "#F1F5FF"},
-        {"accent": "#60A5FA", "shirt": "#DBEAFE", "pants": "#BFDBFE", "hair": "#1F2937", "bg": "#EEF2FF"},
-        {"accent": "#3B82F6", "shirt": "#EDE9FE", "pants": "#C7D2FE", "hair": "#0F172A", "bg": "#F5F3FF"},
-        {"accent": "#2563EB", "shirt": "#E0E7FF", "pants": "#A5B4FC", "hair": "#0B1220", "bg": "#EEF2FF"},
-        {"accent": "#1D4ED8", "shirt": "#DBEAFE", "pants": "#93C5FD", "hair": "#0B1220", "bg": "#EFF6FF"},
+        {"accent": "#2563EB", "shirt": "#DBEAFE", "pants": "#CBD5E1", "hair": "#334155", "bg": "#EEF2FF"},
+        {"accent": "#1D4ED8", "shirt": "#E0E7FF", "pants": "#BFDBFE", "hair": "#1F2937", "bg": "#EEF2FF"},
+        {"accent": "#0F4C81", "shirt": "#EDE9FE", "pants": "#C7D2FE", "hair": "#0F172A", "bg": "#F5F3FF"},
+        {"accent": "#003876", "shirt": "#E0E7FF", "pants": "#A5B4FC", "hair": "#0B1220", "bg": "#EEF2FF"},
+        {"accent": "#003876", "shirt": "#DBEAFE", "pants": "#93C5FD", "hair": "#0B1220", "bg": "#EFF6FF"},
     ]
     p = palettes[stage]
 
-    # Small “growth props”
     props = [
         "",  # baby
-        f'<circle cx="118" cy="38" r="6" fill="{p["accent"]}" opacity="0.35"/>',  # sparkle
-        f'<path d="M108 36c8-10 20-10 28 0" stroke="{p["accent"]}" stroke-width="3" stroke-linecap="round" opacity="0.35"/>',
-        f'<path d="M126 24l8 14h-16l8-14z" fill="{p["accent"]}" opacity="0.30"/>',  # cap hint
-        f'<rect x="108" y="20" width="36" height="10" rx="5" fill="{p["accent"]}" opacity="0.30"/>'  # pro header
+        f'<circle cx="118" cy="38" r="7" fill="{p["accent"]}" opacity="0.20"/>',
+        f'<path d="M108 36c8-10 20-10 28 0" stroke="{p["accent"]}" stroke-width="3" stroke-linecap="round" opacity="0.20"/>',
+        f'<path d="M126 24l8 14h-16l8-14z" fill="{p["accent"]}" opacity="0.22"/>',
+        f'<rect x="108" y="20" width="36" height="10" rx="5" fill="{p["accent"]}" opacity="0.22"/>'
     ][stage]
 
-    # Size: grows slightly by stage
-    scale = [0.92, 0.98, 1.04, 1.08, 1.12][stage]
+    scale = [0.95, 1.00, 1.05, 1.08, 1.10][stage]
 
-    # Add tie/graduate cap
     tie = ""
     cap = ""
     if stage >= 4:
-        tie = f'<path d="M120 110h12l-6 10-6-10z" fill="{p["accent"]}" opacity="0.9"/>'
+        tie = f'<path d="M120 110h12l-6 10-6-10z" fill="{p["accent"]}" opacity="0.92"/>'
     if stage >= 3:
         cap = f'''
-        <path d="M92 56l34-16 34 16-34 16-34-16z" fill="{p["accent"]}" opacity="0.95"/>
+        <path d="M92 56l34-16 34 16-34 16-34-16z" fill="{p["accent"]}" opacity="0.92"/>
         <path d="M126 72v10" stroke="{p["accent"]}" stroke-width="4" stroke-linecap="round"/>
         <circle cx="126" cy="86" r="4" fill="{p["accent"]}"/>
         '''
 
+    # NOTE: style width 100% to fit container; height auto
     return f"""
-<svg width="220" height="180" viewBox="0 0 220 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="growth character">
+<div style="width:100%; display:flex; justify-content:center;">
+<svg style="width:100%; max-width:280px; height:auto; display:block;"
+     viewBox="0 0 220 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="growth character">
   <defs>
     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0B1220" flood-opacity="0.12"/>
+      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0B1220" flood-opacity="0.14"/>
     </filter>
   </defs>
 
   <g filter="url(#shadow)">
     <rect x="14" y="14" width="192" height="152" rx="22" fill="{p["bg"]}"/>
-    <rect x="14" y="14" width="192" height="152" rx="22" fill="white" opacity="0.45"/>
+    <rect x="14" y="14" width="192" height="152" rx="22" fill="white" opacity="0.55"/>
+    <rect x="14" y="14" width="192" height="152" rx="22" fill="none" stroke="rgba(15,23,42,0.10)" />
   </g>
 
   <g transform="translate(0,0) scale({scale}) translate({(1-scale)*110}, {(1-scale)*90})">
@@ -109,18 +110,18 @@ def character_svg(stage: int) -> str:
 
     <!-- body -->
     <ellipse cx="110" cy="126" rx="46" ry="34" fill="{p["shirt"]}"/>
-    <ellipse cx="110" cy="142" rx="52" ry="24" fill="{p["pants"]}" opacity="0.95"/>
+    <ellipse cx="110" cy="142" rx="52" ry="24" fill="{p["pants"]}" opacity="0.98"/>
 
     <!-- head -->
     <circle cx="110" cy="84" r="34" fill="#FFE7D1"/>
     <!-- hair -->
-    <path d="M78 86c4-26 60-34 76 0 2-22-10-42-38-42S76 64 78 86z" fill="{p["hair"]}" opacity="0.95"/>
-    <path d="M88 66c10-14 44-14 56 0" stroke="white" stroke-opacity="0.15" stroke-width="6" stroke-linecap="round"/>
+    <path d="M78 86c4-26 60-34 76 0 2-22-10-42-38-42S76 64 78 86z" fill="{p["hair"]}" opacity="0.98"/>
+    <path d="M88 66c10-14 44-14 56 0" stroke="white" stroke-opacity="0.16" stroke-width="6" stroke-linecap="round"/>
 
     <!-- face -->
-    <circle cx="98" cy="86" r="4" fill="#0B1220" opacity="0.85"/>
-    <circle cx="122" cy="86" r="4" fill="#0B1220" opacity="0.85"/>
-    <path d="M102 100c6 6 10 6 16 0" stroke="#0B1220" stroke-width="3" stroke-linecap="round" opacity="0.6"/>
+    <circle cx="98" cy="86" r="4" fill="#0B1220" opacity="0.88"/>
+    <circle cx="122" cy="86" r="4" fill="#0B1220" opacity="0.88"/>
+    <path d="M102 100c6 6 10 6 16 0" stroke="#0B1220" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
 
     <!-- cheeks -->
     <circle cx="92" cy="96" r="6" fill="#FB7185" opacity="0.18"/>
@@ -134,11 +135,12 @@ def character_svg(stage: int) -> str:
     {tie}
   </g>
 </svg>
+</div>
 """.strip()
 
 
 # =========================================================
-# CSS — White background + premium glass cards + crisp typography
+# CSS — White background + premium glass cards + fix hero clipping
 # =========================================================
 def inject_css() -> None:
     st.markdown(
@@ -186,8 +188,9 @@ html, body, [data-testid="stApp"]{
   background-image: url("data:image/svg+xml,%3Csvg xmlns='https://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
 }
 
+/* ✅ FIX: extra top padding to prevent hero clipping */
 .block-container{
-  padding-top: 1.1rem;
+  padding-top: 1.65rem;
   padding-bottom: 3rem;
   max-width: 1200px;
 }
@@ -202,14 +205,15 @@ section[data-testid="stSidebar"]{
   backdrop-filter: blur(10px);
 }
 
-/* hero */
+/* ✅ FIX: add margin-top to hero */
 .mp-hero{
+  margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   background: linear-gradient(120deg, rgba(0,56,118,0.10), rgba(79,70,229,0.08));
   padding: 18px 18px;
-  margin: 6px 0 18px 0;
+  margin-bottom: 18px;
   overflow:hidden;
   position: relative;
 }
@@ -358,11 +362,6 @@ section[data-testid="stSidebar"]{
   padding: 10px 14px !important;
   font-weight: 700 !important;
 }
-
-/* chat bubbles spacing */
-.stChatMessage{
-  border-radius: 18px;
-}
 </style>
 """,
         unsafe_allow_html=True,
@@ -378,27 +377,25 @@ inject_css()
 def init_state() -> None:
     ss = st.session_state
     ss.setdefault("profile", {})
-    ss.setdefault("profile_analysis", None)          # dict
-    ss.setdefault("action_plan_df", None)            # DataFrame
-    ss.setdefault("recommended_keywords", [])        # list[str]
+    ss.setdefault("profile_analysis", None)
+    ss.setdefault("action_plan_df", None)
+    ss.setdefault("recommended_keywords", [])
 
-    ss.setdefault("search_df", None)                 # DataFrame
-    ss.setdefault("digest_result", None)             # dict {digests, overall}
-    ss.setdefault("trend_df", None)                  # DataFrame
-    ss.setdefault("trend_summary", None)             # str
-    ss.setdefault("plan_result", None)               # dict
+    ss.setdefault("search_df", None)
+    ss.setdefault("digest_result", None)
+    ss.setdefault("trend_df", None)
+    ss.setdefault("trend_summary", None)
+    ss.setdefault("plan_result", None)
 
-    ss.setdefault("chat_history", [])                # [{role, content}]
+    ss.setdefault("chat_history", [])
     ss.setdefault("chat_context", {"profile": None, "analysis": None, "digest": None, "trend": None, "plan": None})
 
-    # Achievements needed by your chat snippet
     ss.setdefault("achievements", {"chat_5": False, "secret_phrase": False})
 
-    # Growth rewards
     ss.setdefault("xp", 0)
     ss.setdefault("growth_stage", 0)
-    ss.setdefault("growth_log", [])                  # [{ts, reason, points}]
-    ss.setdefault("roadmap_todos", [])               # [{id, task, done, points, source}]
+    ss.setdefault("growth_log", [])
+    ss.setdefault("roadmap_todos", [])
     ss.setdefault("todos_seeded", False)
 
 
@@ -447,6 +444,14 @@ def _unlock(key: str) -> None:
         st.toast(f"Unlocked: {key}", icon="🏆")
 
 
+def _current_stage_from_xp(xp: int) -> int:
+    stage = 0
+    for i, stg in enumerate(GROWTH_STAGES):
+        if xp >= stg["min_xp"]:
+            stage = i
+    return stage
+
+
 def award_xp(points: int, reason: str) -> None:
     ss = st.session_state
     ss.xp += max(0, int(points))
@@ -455,9 +460,6 @@ def award_xp(points: int, reason: str) -> None:
 
 
 def _maybe_drop_reward(event: str) -> None:
-    """
-    실행 기반 XP 적립(랜덤 드랍 X).
-    """
     points_map = {
         "profile_done": 8,
         "digest_done": 10,
@@ -480,14 +482,6 @@ GROWTH_STAGES = [
     {"name": "Student", "min_xp": 100, "desc": "학기 계획을 견고하게 만드는 단계."},
     {"name": "Pro", "min_xp": 150, "desc": "완성 단계. 결과물을 지원/제출로 연결!"},
 ]
-
-
-def _current_stage_from_xp(xp: int) -> int:
-    stage = 0
-    for i, stg in enumerate(GROWTH_STAGES):
-        if xp >= stg["min_xp"]:
-            stage = i
-    return stage
 
 
 # =========================================================
@@ -744,7 +738,6 @@ def llm_plan_builder(context: Dict[str, Any], openai_key: str, model: str) -> Di
     return parsed
 
 
-# Chat snippet expects this signature:
 def llm_chat(*, openai_key: str, model: str, history: List[Dict[str, str]], context: Dict[str, Any], user_message: str) -> str:
     client = openai_client(openai_key)
     system = (
@@ -764,13 +757,12 @@ def llm_chat(*, openai_key: str, model: str, history: List[Dict[str, str]], cont
     for m in history[-10:]:
         messages.append({"role": m["role"], "content": m["content"]})
     messages.append({"role": "user", "content": user_message})
-
     resp = client.chat.completions.create(model=model, messages=messages, temperature=0.6)
     return resp.choices[0].message.content or ""
 
 
 # =========================================================
-# SIDEBAR (restore)
+# SIDEBAR
 # =========================================================
 with st.sidebar:
     st.markdown("## 🔐 Keys")
@@ -786,15 +778,14 @@ with st.sidebar:
     show_extracted_text = st.toggle("Debug: show extracted text", value=False)
 
     st.markdown("---")
-    st.caption("Secrets는 Streamlit Cloud Settings → Secrets에 등록하면 됩니다.")
+    st.caption("Streamlit Cloud Settings → Secrets에 키를 등록하면 됩니다.")
 
 
 # =========================================================
-# HERO (restore)
+# HERO
 # =========================================================
 llm_ready = llm_enabled(openai_key)
 naver_ready = bool(naver_id.strip() and naver_secret.strip())
-st.session_state.growth_stage = _current_stage_from_xp(st.session_state.xp)
 
 st.markdown(
     f"""
@@ -831,7 +822,6 @@ def seed_todos_if_needed() -> None:
     todos = []
     tid = 1
 
-    # Prefer action plan table if exists
     df = ss.action_plan_df
     if isinstance(df, pd.DataFrame) and not df.empty:
         for _, r in df.head(10).iterrows():
@@ -845,7 +835,6 @@ def seed_todos_if_needed() -> None:
             todos.append({"id": tid, "task": task, "done": False, "points": points, "source": "Action Plan"})
             tid += 1
 
-    # Fallback starter tasks
     if not todos:
         base = [
             ("타겟 직무 1개를 1페이지로 정리하기", 12),
@@ -862,16 +851,15 @@ def seed_todos_if_needed() -> None:
 
 
 # =========================================================
-# MAIN TABS (must exist)
+# MAIN TABS
 # =========================================================
 tab_profile, tab_digest, tab_trend, tab_plan, tab_chat, tab_growth = st.tabs(
     ["Profile", "Evidence Digest", "Trend Pulse", "Plan Builder", "Chat", "Growth Rewards"]
 )
 
-
-# =========================================================
+# ---------------------------------------------------------
 # TAB 1: PROFILE
-# =========================================================
+# ---------------------------------------------------------
 with tab_profile:
     st.markdown("<div class='mp-section'>Profile</div>", unsafe_allow_html=True)
 
@@ -931,9 +919,7 @@ with tab_profile:
                     st.session_state.action_plan_df = df
                     st.session_state.recommended_keywords = (analysis.get("keyword_suggestions", []) or [])[:10]
 
-                    # Seed todos from action plan
                     st.session_state.todos_seeded = False
-                    seed_todos_if_needed()
                 except Exception as e:
                     st.error(f"LLM 분석 오류: {e}")
                     st.session_state.profile_analysis = None
@@ -959,11 +945,9 @@ with tab_profile:
         with c1:
             st.markdown("<div class='mp-card'><div class='mp-section'>Dashboard</div><div class='mp-muted'>학점 진행 상황</div></div>", unsafe_allow_html=True)
             chart_df = pd.DataFrame(
-                {
-                    "Category": ["Total", "Major", "Liberal"],
-                    "Completed": [total_done, p["major_credit"], p["liberal_credit"]],
-                    "Remaining": [total_remaining, major_remaining, lib_remaining],
-                }
+                {"Category": ["Total", "Major", "Liberal"],
+                 "Completed": [total_done, p["major_credit"], p["liberal_credit"]],
+                 "Remaining": [total_remaining, major_remaining, lib_remaining]}
             ).set_index("Category")
             st.bar_chart(chart_df)
 
@@ -980,17 +964,12 @@ with tab_profile:
             if st.session_state.profile_analysis:
                 a = st.session_state.profile_analysis
                 st.write(a.get("summary_ko", ""))
-
                 st.markdown("**Strengths**")
                 st.write("\n".join([f"- {x}" for x in a.get("strengths", [])]) or "-")
-
                 st.markdown("**Risks**")
                 st.write("\n".join([f"- {x}" for x in a.get("risks", [])]) or "-")
-
                 st.markdown("**Next Focus**")
                 st.write("\n".join([f"- {x}" for x in a.get("next_focus", [])]) or "-")
-            else:
-                st.write("")
 
         with right:
             st.markdown("<div class='mp-card-solid'><div class='mp-section'>Action Plan</div><div class='mp-muted'>산출물 중심</div></div>", unsafe_allow_html=True)
@@ -1007,14 +986,13 @@ with tab_profile:
                     use_container_width=True,
                 )
 
-
-# =========================================================
+# ---------------------------------------------------------
 # TAB 2: EVIDENCE DIGEST
-# =========================================================
+# ---------------------------------------------------------
 with tab_digest:
     st.markdown("<div class='mp-section'>Evidence Digest</div>", unsafe_allow_html=True)
 
-    if not naver_ready:
+    if not (naver_id.strip() and naver_secret.strip()):
         st.warning("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 이 필요합니다.")
     else:
         default_q = ""
@@ -1147,14 +1125,13 @@ with tab_digest:
                         with st.expander("Extracted text (debug)", expanded=False):
                             st.write(clamp_text(fetch_and_extract_text(url), 5000))
 
-
-# =========================================================
+# ---------------------------------------------------------
 # TAB 3: TREND PULSE
-# =========================================================
+# ---------------------------------------------------------
 with tab_trend:
     st.markdown("<div class='mp-section'>Trend Pulse</div>", unsafe_allow_html=True)
 
-    if not naver_ready:
+    if not (naver_id.strip() and naver_secret.strip()):
         st.warning("NAVER_CLIENT_ID / NAVER_CLIENT_SECRET 이 필요합니다.")
     else:
         end = date.today()
@@ -1223,10 +1200,9 @@ with tab_trend:
                 st.markdown("<div class='mp-card'><div class='mp-section'>Interpretation</div></div>", unsafe_allow_html=True)
                 st.write(st.session_state.trend_summary)
 
-
-# =========================================================
+# ---------------------------------------------------------
 # TAB 4: PLAN BUILDER
-# =========================================================
+# ---------------------------------------------------------
 with tab_plan:
     st.markdown("<div class='mp-section'>Plan Builder</div>", unsafe_allow_html=True)
 
@@ -1255,6 +1231,7 @@ with tab_plan:
                     st.session_state.plan_result = plan
                     st.session_state.chat_context["plan"] = plan
                     _maybe_drop_reward("plan_done")
+                    st.session_state.todos_seeded = False
                 except Exception as e:
                     st.error(f"Plan 생성 오류: {e}")
 
@@ -1288,16 +1265,14 @@ with tab_plan:
             st.markdown("**Checklist**")
             st.write("\n".join([f"- {x}" for x in plan.get("checklist", [])]) or "-")
 
-
-# =========================================================
-# TAB 5: CHAT (your requested logic)
-# =========================================================
+# ---------------------------------------------------------
+# TAB 5: CHAT
+# ---------------------------------------------------------
 with tab_chat:
     st.markdown("<div class='mp-section'>Chat</div>", unsafe_allow_html=True)
 
     SECRET_PHRASE = "path to pass"
 
-    # Render history
     for m in st.session_state.chat_history:
         with st.chat_message(m["role"]):
             st.markdown(m["content"])
@@ -1349,9 +1324,9 @@ with tab_chat:
                 st.info("OpenAI API Key를 입력하면 Chat이 동작합니다.")
 
 
-# =========================================================
-# TAB 6: GROWTH REWARDS (todo -> XP -> SVG character)
-# =========================================================
+# ---------------------------------------------------------
+# TAB 6: GROWTH REWARDS — FIXED SVG VISIBILITY
+# ---------------------------------------------------------
 with tab_growth:
     st.markdown("<div class='mp-section'>Growth Rewards</div>", unsafe_allow_html=True)
 
@@ -1362,7 +1337,7 @@ with tab_growth:
     stage_idx = ss.growth_stage
     stage = GROWTH_STAGES[stage_idx]
 
-    # Progress bar to next stage
+    # Progress bar
     if stage_idx < len(GROWTH_STAGES) - 1:
         next_min = GROWTH_STAGES[stage_idx + 1]["min_xp"]
         cur_min = stage["min_xp"]
@@ -1377,15 +1352,16 @@ with tab_growth:
     top_left, top_right = st.columns([1.2, 0.8])
     with top_left:
         st.markdown("<div class='mp-card-solid'>", unsafe_allow_html=True)
-        st.markdown(f"<div class='mp-section'>My Little Pass</div>", unsafe_allow_html=True)
+        st.markdown("<div class='mp-section'>My Little Pass</div>", unsafe_allow_html=True)
         st.markdown(f"<div class='mp-muted'>Stage: <b>{stage['name']}</b> · XP: <b>{ss.xp}</b></div>", unsafe_allow_html=True)
         st.markdown(f"<div style='margin-top:10px; color:rgba(11,18,32,0.72);'>{stage['desc']}</div>", unsafe_allow_html=True)
         st.progress(prog, text=next_label)
         st.markdown("</div>", unsafe_allow_html=True)
 
     with top_right:
-        st.markdown("<div class='mp-card-solid' style='text-align:center;'>", unsafe_allow_html=True)
-        st.markdown(character_svg(stage_idx), unsafe_allow_html=True)
+        # ✅ FIX: render SVG via components.html with a reliable height
+        st.markdown("<div class='mp-card-solid'>", unsafe_allow_html=True)
+        components.html(character_svg(stage_idx), height=240)
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
@@ -1417,7 +1393,6 @@ with tab_growth:
         award_xp(int(row["points"]), reason=f"todo_completed:{tid}")
         st.toast(f"+{int(row['points'])} XP (To-Do 완료)", icon="🪙")
 
-    # Add your own task
     st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='mp-section'>Add your own task</div>", unsafe_allow_html=True)
 
@@ -1435,16 +1410,13 @@ with tab_growth:
         _maybe_drop_reward("todo_added")
         st.success("To-Do가 추가됐어요!")
 
-    # Completion ending
     all_done = all(bool(t["done"]) for t in ss.roadmap_todos) if ss.roadmap_todos else False
     if all_done:
         st.success("🎉 로드맵 To-Do를 전부 완료했어요! (완성)")
-        # One-time completion bonus
         if not any(x.get("reason") == "roadmap_complete_bonus" for x in ss.growth_log):
             award_xp(25, "roadmap_complete_bonus")
             st.balloons()
 
-    # Log
     st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
     st.markdown("<div class='mp-card-solid'><div class='mp-section'>Reward Log</div><div class='mp-muted'>최근 기록</div></div>", unsafe_allow_html=True)
     if ss.growth_log:
