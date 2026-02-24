@@ -49,97 +49,6 @@ def eagle_svg(color: str = YONSEI_BLUE) -> str:
 
 
 # =========================================================
-# SVG: Growth character (baby -> pro) — improved contrast + responsive
-# =========================================================
-def character_svg(stage: int) -> str:
-    """
-    stage: 0..4
-    Rendered via components.html for reliability.
-    """
-    stage = max(0, min(int(stage), 4))
-
-    palettes = [
-        {"accent": "#2563EB", "shirt": "#DBEAFE", "pants": "#CBD5E1", "hair": "#334155", "bg": "#EEF2FF"},
-        {"accent": "#1D4ED8", "shirt": "#E0E7FF", "pants": "#BFDBFE", "hair": "#1F2937", "bg": "#EEF2FF"},
-        {"accent": "#0F4C81", "shirt": "#EDE9FE", "pants": "#C7D2FE", "hair": "#0F172A", "bg": "#F5F3FF"},
-        {"accent": "#003876", "shirt": "#E0E7FF", "pants": "#A5B4FC", "hair": "#0B1220", "bg": "#EEF2FF"},
-        {"accent": "#003876", "shirt": "#DBEAFE", "pants": "#93C5FD", "hair": "#0B1220", "bg": "#EFF6FF"},
-    ]
-    p = palettes[stage]
-
-    props = [
-        "",  # baby
-        f'<circle cx="118" cy="38" r="7" fill="{p["accent"]}" opacity="0.20"/>',
-        f'<path d="M108 36c8-10 20-10 28 0" stroke="{p["accent"]}" stroke-width="3" stroke-linecap="round" opacity="0.20"/>',
-        f'<path d="M126 24l8 14h-16l8-14z" fill="{p["accent"]}" opacity="0.22"/>',
-        f'<rect x="108" y="20" width="36" height="10" rx="5" fill="{p["accent"]}" opacity="0.22"/>'
-    ][stage]
-
-    scale = [0.95, 1.00, 1.05, 1.08, 1.10][stage]
-
-    tie = ""
-    cap = ""
-    if stage >= 4:
-        tie = f'<path d="M120 110h12l-6 10-6-10z" fill="{p["accent"]}" opacity="0.92"/>'
-    if stage >= 3:
-        cap = f'''
-        <path d="M92 56l34-16 34 16-34 16-34-16z" fill="{p["accent"]}" opacity="0.92"/>
-        <path d="M126 72v10" stroke="{p["accent"]}" stroke-width="4" stroke-linecap="round"/>
-        <circle cx="126" cy="86" r="4" fill="{p["accent"]}"/>
-        '''
-
-    # NOTE: style width 100% to fit container; height auto
-    return f"""
-<div style="width:100%; display:flex; justify-content:center;">
-<svg style="width:100%; max-width:280px; height:auto; display:block;"
-     viewBox="0 0 220 180" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="growth character">
-  <defs>
-    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-      <feDropShadow dx="0" dy="10" stdDeviation="10" flood-color="#0B1220" flood-opacity="0.14"/>
-    </filter>
-  </defs>
-
-  <g filter="url(#shadow)">
-    <rect x="14" y="14" width="192" height="152" rx="22" fill="{p["bg"]}"/>
-    <rect x="14" y="14" width="192" height="152" rx="22" fill="white" opacity="0.55"/>
-    <rect x="14" y="14" width="192" height="152" rx="22" fill="none" stroke="rgba(15,23,42,0.10)" />
-  </g>
-
-  <g transform="translate(0,0) scale({scale}) translate({(1-scale)*110}, {(1-scale)*90})">
-    {props}
-
-    <!-- body -->
-    <ellipse cx="110" cy="126" rx="46" ry="34" fill="{p["shirt"]}"/>
-    <ellipse cx="110" cy="142" rx="52" ry="24" fill="{p["pants"]}" opacity="0.98"/>
-
-    <!-- head -->
-    <circle cx="110" cy="84" r="34" fill="#FFE7D1"/>
-    <!-- hair -->
-    <path d="M78 86c4-26 60-34 76 0 2-22-10-42-38-42S76 64 78 86z" fill="{p["hair"]}" opacity="0.98"/>
-    <path d="M88 66c10-14 44-14 56 0" stroke="white" stroke-opacity="0.16" stroke-width="6" stroke-linecap="round"/>
-
-    <!-- face -->
-    <circle cx="98" cy="86" r="4" fill="#0B1220" opacity="0.88"/>
-    <circle cx="122" cy="86" r="4" fill="#0B1220" opacity="0.88"/>
-    <path d="M102 100c6 6 10 6 16 0" stroke="#0B1220" stroke-width="3" stroke-linecap="round" opacity="0.62"/>
-
-    <!-- cheeks -->
-    <circle cx="92" cy="96" r="6" fill="#FB7185" opacity="0.18"/>
-    <circle cx="128" cy="96" r="6" fill="#FB7185" opacity="0.18"/>
-
-    <!-- arms -->
-    <path d="M72 124c-10 4-14 10-14 18" stroke="#FFE7D1" stroke-width="10" stroke-linecap="round"/>
-    <path d="M148 124c10 4 14 10 14 18" stroke="#FFE7D1" stroke-width="10" stroke-linecap="round"/>
-
-    {cap}
-    {tie}
-  </g>
-</svg>
-</div>
-""".strip()
-
-
-# =========================================================
 # CSS — White background + premium glass cards + fix hero clipping
 # =========================================================
 def inject_css() -> None:
@@ -188,7 +97,7 @@ html, body, [data-testid="stApp"]{
   background-image: url("data:image/svg+xml,%3Csvg xmlns='https://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.35'/%3E%3C/svg%3E");
 }
 
-/* ✅ FIX: extra top padding to prevent hero clipping */
+/* ✅ extra top padding to prevent hero clipping */
 .block-container{
   padding-top: 1.65rem;
   padding-bottom: 3rem;
@@ -205,7 +114,7 @@ section[data-testid="stSidebar"]{
   backdrop-filter: blur(10px);
 }
 
-/* ✅ FIX: add margin-top to hero */
+/* ✅ add margin-top to hero */
 .mp-hero{
   margin-top: 10px;
   border: 1px solid var(--border);
@@ -436,20 +345,12 @@ def llm_enabled(openai_key: str) -> bool:
 
 
 # =========================================================
-# REWARDS / ACHIEVEMENTS (for Chat snippet compatibility)
+# REWARDS / ACHIEVEMENTS
 # =========================================================
 def _unlock(key: str) -> None:
     if key in st.session_state.achievements and not st.session_state.achievements[key]:
         st.session_state.achievements[key] = True
         st.toast(f"Unlocked: {key}", icon="🏆")
-
-
-def _current_stage_from_xp(xp: int) -> int:
-    stage = 0
-    for i, stg in enumerate(GROWTH_STAGES):
-        if xp >= stg["min_xp"]:
-            stage = i
-    return stage
 
 
 def award_xp(points: int, reason: str) -> None:
@@ -476,42 +377,38 @@ def _maybe_drop_reward(event: str) -> None:
 # GROWTH STAGES (XP thresholds)
 # =========================================================
 GROWTH_STAGES = [
-    {"name": "Baby", "min_xp": 0, "desc": "작은 행동부터 시작해요."},
-    {"name": "Kid", "min_xp": 25, "desc": "조금씩 습관이 잡히는 구간!"},
-    {"name": "Adult", "min_xp": 60, "desc": "산출물이 쌓이기 시작해요."},
-    {"name": "Student", "min_xp": 100, "desc": "학기 계획을 견고하게 만드는 단계."},
-    {"name": "Pro", "min_xp": 150, "desc": "완성 단계. 결과물을 지원/제출로 연결!"},
+    {"name": "Baby", "min_xp": 0, "desc": "작은 행동부터 시작해요.", "emoji": "👶"},
+    {"name": "Kid", "min_xp": 25, "desc": "조금씩 습관이 잡히는 구간!", "emoji": "🧒"},
+    {"name": "Student", "min_xp": 60, "desc": "산출물이 쌓이기 시작해요.", "emoji": "🧑‍🎓"},
+    {"name": "Adult", "min_xp": 100, "desc": "학기 계획을 견고하게 만드는 단계.", "emoji": "🧑"},
+    {"name": "Pro", "min_xp": 150, "desc": "완성 단계. 결과물을 지원/제출로 연결!", "emoji": "🧑‍💼"},
 ]
+
+
+def _current_stage_from_xp(xp: int) -> int:
+    stage = 0
+    for i, stg in enumerate(GROWTH_STAGES):
+        if xp >= stg["min_xp"]:
+            stage = i
+    return stage
 
 
 # =========================================================
 # NAVER APIs
 # =========================================================
 def naver_headers(client_id: str, client_secret: str) -> Dict[str, str]:
-    return {
-        "X-Naver-Client-Id": client_id.strip(),
-        "X-Naver-Client-Secret": client_secret.strip(),
-    }
+    return {"X-Naver-Client-Id": client_id.strip(), "X-Naver-Client-Secret": client_secret.strip()}
 
 
 @st.cache_data(ttl=60 * 30)
-def naver_search(
-    query: str,
-    client_id: str,
-    client_secret: str,
-    category: str = "news",
-    display: int = 10,
-    sort: str = "sim",
-) -> pd.DataFrame:
+def naver_search(query: str, client_id: str, client_secret: str, category: str = "news", display: int = 10, sort: str = "sim") -> pd.DataFrame:
     if not query.strip():
         return pd.DataFrame()
-
     url = f"https://openapi.naver.com/v1/search/{category}.json"
     params = {"query": query, "display": int(display), "start": 1, "sort": sort}
     res = requests.get(url, headers=naver_headers(client_id, client_secret), params=params, timeout=15)
     res.raise_for_status()
     data = res.json()
-
     items = data.get("items", [])
     rows = []
     for it in items:
@@ -529,21 +426,9 @@ def naver_search(
 
 
 @st.cache_data(ttl=60 * 60)
-def naver_datalab_trend(
-    client_id: str,
-    client_secret: str,
-    start_date: str,
-    end_date: str,
-    time_unit: str,
-    keyword_groups: List[Dict[str, Any]],
-) -> pd.DataFrame:
+def naver_datalab_trend(client_id: str, client_secret: str, start_date: str, end_date: str, time_unit: str, keyword_groups: List[Dict[str, Any]]) -> pd.DataFrame:
     url = "https://openapi.naver.com/v1/datalab/search"
-    body = {
-        "startDate": start_date,
-        "endDate": end_date,
-        "timeUnit": time_unit,
-        "keywordGroups": keyword_groups,
-    }
+    body = {"startDate": start_date, "endDate": end_date, "timeUnit": time_unit, "keywordGroups": keyword_groups}
     res = requests.post(
         url,
         headers={**naver_headers(client_id, client_secret), "Content-Type": "application/json"},
@@ -552,7 +437,6 @@ def naver_datalab_trend(
     )
     res.raise_for_status()
     data = res.json()
-
     results = data.get("results", [])
     if not results:
         return pd.DataFrame()
@@ -857,6 +741,7 @@ tab_profile, tab_digest, tab_trend, tab_plan, tab_chat, tab_growth = st.tabs(
     ["Profile", "Evidence Digest", "Trend Pulse", "Plan Builder", "Chat", "Growth Rewards"]
 )
 
+# (기타 탭들은 이전 코드와 동일하게 유지되어야 하므로, 아래는 생략 없이 그대로)
 # ---------------------------------------------------------
 # TAB 1: PROFILE
 # ---------------------------------------------------------
@@ -1186,7 +1071,7 @@ with tab_trend:
             st.markdown("<div class='mp-card-solid'><div class='mp-section'>Chart</div><div class='mp-muted'>상대적 신호</div></div>", unsafe_allow_html=True)
             st.line_chart(df)
 
-            if llm_ready and st.button("Interpret", use_container_width=True):
+            if llm_enabled(openai_key) and st.button("Interpret", use_container_width=True):
                 with st.spinner("해석 생성 중…"):
                     try:
                         summary = llm_trend_interpretation(df, openai_key, model)
@@ -1208,7 +1093,7 @@ with tab_plan:
 
     if not st.session_state.profile:
         st.warning("먼저 Profile에서 Generate를 해주세요.")
-    elif not llm_ready:
+    elif not llm_enabled(openai_key):
         st.warning("OpenAI Key가 필요합니다.")
     else:
         context = {
@@ -1303,7 +1188,7 @@ with tab_chat:
         if len(user_msgs) >= 5:
             _unlock("chat_5")
 
-        if llm_ready:
+        if llm_enabled(openai_key):
             with st.chat_message("assistant"):
                 with st.spinner("Thinking…"):
                     try:
@@ -1323,9 +1208,8 @@ with tab_chat:
             with st.chat_message("assistant"):
                 st.info("OpenAI API Key를 입력하면 Chat이 동작합니다.")
 
-
 # ---------------------------------------------------------
-# TAB 6: GROWTH REWARDS — FIXED SVG VISIBILITY
+# TAB 6: GROWTH REWARDS (✅ Emoji only change)
 # ---------------------------------------------------------
 with tab_growth:
     st.markdown("<div class='mp-section'>Growth Rewards</div>", unsafe_allow_html=True)
@@ -1337,7 +1221,6 @@ with tab_growth:
     stage_idx = ss.growth_stage
     stage = GROWTH_STAGES[stage_idx]
 
-    # Progress bar
     if stage_idx < len(GROWTH_STAGES) - 1:
         next_min = GROWTH_STAGES[stage_idx + 1]["min_xp"]
         cur_min = stage["min_xp"]
@@ -1359,9 +1242,10 @@ with tab_growth:
         st.markdown("</div>", unsafe_allow_html=True)
 
     with top_right:
-        # ✅ FIX: render SVG via components.html with a reliable height
-        st.markdown("<div class='mp-card-solid'>", unsafe_allow_html=True)
-        components.html(character_svg(stage_idx), height=240)
+        # ✅ Only change: show emoji instead of SVG
+        st.markdown("<div class='mp-card-solid' style='text-align:center;'>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size:84px; line-height:1.0; margin-top:10px;'>{stage['emoji']}</div>", unsafe_allow_html=True)
+        st.markdown("<div class='mp-muted' style='margin-top:8px;'>Character</div>", unsafe_allow_html=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
     st.markdown("<div class='mp-divider'></div>", unsafe_allow_html=True)
